@@ -23,7 +23,8 @@ public class CombineFasta {
                 "Version: " + version + nl +
                 "Usage: java -jar CombineFasta.jar [mode] [mode options]" + nl +
                 "\tModes:" + nl +
-                "\t\torder\tCombine and orient separate fasta files" + nl);
+                "\t\torder\tCombine and orient separate fasta files" + nl, 
+        "order");
         
         cmd.AddMode("order", 
                 "CombineFasta order:" + nl +
