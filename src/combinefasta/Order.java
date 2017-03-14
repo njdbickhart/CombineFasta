@@ -55,8 +55,10 @@ public class Order {
             switch(fastaOrients.get(x)){
                 case "+":
                     this.seq.addAll(reader.getSeq());
+                    break;
                 case "-":
                     this.seq.addAll(reader.getRevComp());
+                    break;
             }
             log.log(Level.INFO, "Loaded fasta entry: " + reader.getHead());
         }
