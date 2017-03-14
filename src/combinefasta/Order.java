@@ -69,7 +69,7 @@ public class Order {
             StringBuilder builder = new StringBuilder(this.seq.size() + (this.seq.size() / 60) + 1);
             for(int x = 0; x < this.seq.size(); x++){
                 builder.append(this.seq.get(x));
-                if(x != 0 && x % 60 == 0){
+                if(x != 0 && (x + 1) % 60 == 0){
                     builder.append(nl);
                 }
             }

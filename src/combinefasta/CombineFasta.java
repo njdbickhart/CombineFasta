@@ -55,6 +55,7 @@ public class CombineFasta {
                 log.log(Level.INFO, "Mode order selected");
                 Order order = new Order(cmd.GetValue("input"), cmd.GetValue("direction"), cmd.GetValue("output"));
                 order.GenerateFasta();
+                break;
             default:
                 log.log(Level.SEVERE, "Error! Must designate a valid mode to continue!");
                 System.exit(-1);
