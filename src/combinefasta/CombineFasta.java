@@ -33,10 +33,10 @@ public class CombineFasta {
                         "\t-d\tFasta file orientations, separated by commas" + nl + 
                         "\t-o\tOutput fasta file name" + nl +
                         "\t-p\tNumber of N bases to pad fasta entries" + nl, 
-                "i:d:o:p:", 
+                "i:d:o:p:d|", 
                 "ido", 
-                "idop", 
-                "input", "direction", "output", "padding");
+                "idopd", 
+                "input", "direction", "output", "padding", "debug");
         
         return cmd;        
     }
@@ -56,7 +56,7 @@ public class CombineFasta {
                 log.log(Level.INFO, "Mode order selected");
                 int padding = -1;
                 if(cmd.HasOpt("padding"))
-                    padding = Integer.getInteger(cmd.GetValue("padding"));
+                    padding = Integer.parseInt(cmd.GetValue("padding"));
                 Order order = new Order(cmd.GetValue("input"), cmd.GetValue("direction"), cmd.GetValue("output"), padding);
                 order.GenerateFasta();
                 break;
