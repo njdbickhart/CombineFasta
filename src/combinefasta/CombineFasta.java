@@ -14,7 +14,7 @@ import java.util.logging.Logger;
  * @author dbickhart
  */
 public class CombineFasta {
-    private static final String version = "0.0.2";
+    private static final String version = "0.0.3";
     private static final Logger log = Logger.getLogger(CombineFasta.class.getName());
     
     private static ArrayModeCmdLineParser PrepareCMDOptions(){
@@ -28,15 +28,14 @@ public class CombineFasta {
         
         cmd.AddMode("order", 
                 "CombineFasta order:" + nl +
-                        "Usage: java -jar CombineFasta.jar order -i [comma sep input] -d [comma sep orient] -o [output fasta] -p [padding bases]" + nl +
-                "\t-i\tInput fasta files, separated by commas" + nl + 
-                        "\t-d\tFasta file orientations, separated by commas" + nl + 
+                        "Usage: java -jar CombineFasta.jar order -i [tab delim input] -o [output fasta] -p [padding bases]" + nl +
+                "\t-i\tInput fasta files in tab delimited format with orientations in second column" + nl +  
                         "\t-o\tOutput fasta file name" + nl +
                         "\t-p\tNumber of N bases to pad fasta entries" + nl, 
-                "i:d:o:p:d|", 
-                "ido", 
-                "idopd", 
-                "input", "direction", "output", "padding", "debug");
+                "i:o:p:d|", 
+                "io", 
+                "iopd", 
+                "input", "output", "padding", "debug");
         
         return cmd;        
     }
@@ -57,7 +56,7 @@ public class CombineFasta {
                 int padding = -1;
                 if(cmd.HasOpt("padding"))
                     padding = Integer.parseInt(cmd.GetValue("padding"));
-                Order order = new Order(cmd.GetValue("input"), cmd.GetValue("direction"), cmd.GetValue("output"), padding);
+                Order order = new Order(cmd.GetValue("input"), cmd.GetValue("output"), padding);
                 order.GenerateFasta();
                 break;
             default:

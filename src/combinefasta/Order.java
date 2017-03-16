@@ -5,6 +5,7 @@
  */
 package combinefasta;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -29,25 +30,29 @@ public class Order {
     private boolean hasPadding = false;
     private int paddingBP;
     
-    public Order(String fastaStr, String orientStr, String output, int padding){
-        String[] inputs = fastaStr.split(",");
-        String[] orients = orientStr.split(",");
-        this.Output = Paths.get(output);
-        
-        if(inputs.length != orients.length){
-            log.log(Level.SEVERE, "Error! Number of inputs did not match number of orientations!");
-            System.exit(-1);
+    public Order(String fastaStr, String output, int padding){
+        try(BufferedReader reader = Files.newBufferedReader(Paths.get(fastaStr))){
+            String line = null;
+            while((line = reader.readLine()) != null){
+                String[] cols = line.split("\t");
+                if(cols.length != 2)
+                    throw new IOException("Expected two columns in input file!");
+                
+                if(!cols[1].equals("+") && !cols[1].equals("-"))
+                    throw new IOException("Second column must be either a + or - for orientation!");
+                
+                if(!Paths.get(cols[0]).toFile().exists())
+                    throw new IOException("Error accessing file: " + cols[0] + " does it exist?");
+                
+                this.fastaPaths.add(Paths.get(cols[0]));
+                this.fastaOrients.add(cols[1]);
+            }
+        }catch(IOException ex){
+            log.log(Level.SEVERE, "Error reading input fasta order file!", ex);
         }
         
-        for(int x = 0; x < inputs.length; x++){
-            this.fastaPaths.add(Paths.get(inputs[x]));
-            if(!orients[x].equals("+") && !orients[x].equals("-")){
-                log.log(Level.SEVERE, "Error! Expected either a plus or minus in orientation field!");
-                System.exit(-1);
-            }
-            this.fastaOrients.add(orients[x]);
-        }       
-        
+        this.Output = Paths.get(output);
+                
         if(!(padding < 1)){
             this.hasPadding = true;
             this.paddingBP = padding;
