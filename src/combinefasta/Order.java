@@ -26,8 +26,10 @@ public class Order {
     private final Path Output;
     private static final Logger log = Logger.getLogger(Order.class.getName());
     private final List<String> seq = new ArrayList<>();
+    private boolean hasPadding = false;
+    private int paddingBP;
     
-    public Order(String fastaStr, String orientStr, String output){
+    public Order(String fastaStr, String orientStr, String output, int padding){
         String[] inputs = fastaStr.split(",");
         String[] orients = orientStr.split(",");
         this.Output = Paths.get(output);
@@ -46,6 +48,10 @@ public class Order {
             this.fastaOrients.add(orients[x]);
         }       
         
+        if(!(padding < 1)){
+            this.hasPadding = true;
+            this.paddingBP = padding;
+        }
     }
     
     public void GenerateFasta(){
@@ -59,6 +65,10 @@ public class Order {
                 case "-":
                     this.seq.addAll(reader.getRevComp());
                     break;
+            }
+            if(this.hasPadding && x + 1 < fastaPaths.size()){
+                // Add padding bases in between fasta entries
+                this.AddPaddingBP();
             }
             log.log(Level.INFO, "Loaded fasta entry: " + reader.getHead());
         }
@@ -78,6 +88,12 @@ public class Order {
             output.write(builder.toString() + nl);
         }catch(IOException ex){
             log.log(Level.SEVERE, "Error writing to output!", ex);
+        }
+    }
+    
+    private void AddPaddingBP(){
+        for(int x = 0; x < this.paddingBP; x++){
+            this.seq.add("N");
         }
     }
     

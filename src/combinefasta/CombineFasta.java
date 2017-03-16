@@ -14,7 +14,7 @@ import java.util.logging.Logger;
  * @author dbickhart
  */
 public class CombineFasta {
-    private static final String version = "0.0.1";
+    private static final String version = "0.0.2";
     private static final Logger log = Logger.getLogger(CombineFasta.class.getName());
     
     private static ArrayModeCmdLineParser PrepareCMDOptions(){
@@ -28,14 +28,15 @@ public class CombineFasta {
         
         cmd.AddMode("order", 
                 "CombineFasta order:" + nl +
-                        "Usage: java -jar CombineFasta.jar order -i [comma sep input] -d [comma sep orient] -o [output fasta]" + nl +
+                        "Usage: java -jar CombineFasta.jar order -i [comma sep input] -d [comma sep orient] -o [output fasta] -p [padding bases]" + nl +
                 "\t-i\tInput fasta files, separated by commas" + nl + 
                         "\t-d\tFasta file orientations, separated by commas" + nl + 
-                        "\t-o\tOutput fasta file name" + nl, 
-                "i:d:o:", 
+                        "\t-o\tOutput fasta file name" + nl +
+                        "\t-p\tNumber of N bases to pad fasta entries" + nl, 
+                "i:d:o:p:", 
                 "ido", 
-                "ido", 
-                "input", "direction", "output");
+                "idop", 
+                "input", "direction", "output", "padding");
         
         return cmd;        
     }
@@ -53,7 +54,10 @@ public class CombineFasta {
         switch(cmd.CurrentMode){
             case "order":
                 log.log(Level.INFO, "Mode order selected");
-                Order order = new Order(cmd.GetValue("input"), cmd.GetValue("direction"), cmd.GetValue("output"));
+                int padding = -1;
+                if(cmd.HasOpt("padding"))
+                    padding = Integer.getInteger(cmd.GetValue("padding"));
+                Order order = new Order(cmd.GetValue("input"), cmd.GetValue("direction"), cmd.GetValue("output"), padding);
                 order.GenerateFasta();
                 break;
             default:
