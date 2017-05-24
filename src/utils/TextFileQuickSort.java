@@ -116,6 +116,7 @@ public class TextFileQuickSort {
                                         double rand = Math.random();
                                         String tmpfile = tempDirectory + "/tempsplit" + System.currentTimeMillis() + "." + rand;
 					File file = new File(tmpfile);
+                                        file.deleteOnExit();
                                         log.log(Level.INFO, "[TXTFILESORT] Created new chunk temp file: " + tmpfile + " for bin: " + identifier);
 					outputs.add(file);
 					writeOut(lines, new FileOutputStream(file));
@@ -127,6 +128,7 @@ public class TextFileQuickSort {
                         double rand = Math.random();
                         String tmpfile = tempDirectory + "/tempsplit" + System.currentTimeMillis() + "." + rand;
 			File file = new File(tmpfile);
+                        file.deleteOnExit();
                         log.log(Level.FINE, "[TXTFILESORT] Created new chunk temp file: " + tmpfile + " for bin: " + identifier);
 			outputs.add(file);
 			writeOut(lines, new FileOutputStream(file));
