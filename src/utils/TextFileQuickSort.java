@@ -262,10 +262,10 @@ public class TextFileQuickSort {
         
         private void createTemp(Path path){
         try {
-                this.tempFile = Files.createTempFile(path.toString(), "sort.tmp");
+                this.tempFile = Files.createTempFile(path.getFileName().toString(), ".sort.tmp");
                 this.tempFile.toFile().deleteOnExit();
                 
-                log.log(Level.FINE, "[TXTFILESORT] Private temp file: " + this.tempFile.toString());
+                log.log(Level.INFO, "[TXTFILESORT] Private temp file: " + this.tempFile.toString());
             } catch (IOException ex) {
                 Logger.getLogger(TempDataClass.class.getName()).log(Level.SEVERE, null, ex);
             }
