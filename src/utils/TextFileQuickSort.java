@@ -116,7 +116,7 @@ public class TextFileQuickSort {
                                         double rand = Math.random();
                                         String tmpfile = tempDirectory + "tempsplit" + System.currentTimeMillis() + "." + rand;
 					File file = new File(tmpfile);
-                                        log.log(Level.FINE, "[TXTFILESORT] Created new chunk temp file: " + tmpfile + " for bin: " + identifier);
+                                        log.log(Level.INFO, "[TXTFILESORT] Created new chunk temp file: " + tmpfile + " for bin: " + identifier);
 					outputs.add(file);
 					writeOut(lines, new FileOutputStream(file));
 					lines.clear();
@@ -261,14 +261,12 @@ public class TextFileQuickSort {
         }
         
         private void createTemp(Path path){
-        try {
-                this.tempFile = Files.createTempFile(path.getFileName().toString(), ".sort.tmp");
-                this.tempFile.toFile().deleteOnExit();
-                
-                log.log(Level.INFO, "[TXTFILESORT] Private temp file: " + this.tempFile.toString());
-            } catch (IOException ex) {
-                Logger.getLogger(TempDataClass.class.getName()).log(Level.SEVERE, null, ex);
-            }
+        
+            this.tempFile = Paths.get(path.getFileName().toString(), ".sort.tmp");
+            this.tempFile.toFile().deleteOnExit();
+
+            log.log(Level.INFO, "[TXTFILESORT] Private temp file: " + this.tempFile.toString());
+            
         }
         
         public class QuickSortOutput{
