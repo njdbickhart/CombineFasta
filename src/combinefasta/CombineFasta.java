@@ -73,7 +73,7 @@ public class CombineFasta {
                 break;
             case "pair":
                 log.log(Level.INFO, "Mode pair selected");
-                Pair pair = new Pair(cmd.GetValue("foward"), cmd.GetValue("reverse"), cmd.GetValue("output"));
+                Pair pair = new Pair(cmd.GetValue("forward"), cmd.GetValue("reverse"), cmd.GetValue("output"));
                 pair.run();
                 break;
             default:
