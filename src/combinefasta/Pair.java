@@ -81,7 +81,7 @@ public class Pair {
         Map<String, QuickSortOutput> postSortOutput = preSortFiles.entrySet().parallelStream().map((f) -> {
                 FastqFileQuickSort t = new FastqFileQuickSort("\t", new int[]{0}, f.getValue().toString());
                 try{
-                    t.splitChunks(new FileInputStream(f.getValue().toFile()), f.getKey());
+                    t.splitChunks(f.getValue(), f.getKey());
                     t.mergeChunks();
                 }catch(IOException ex){
                     log.log(Level.SEVERE, "Could not split text file: " + f.getValue().toString(), ex);

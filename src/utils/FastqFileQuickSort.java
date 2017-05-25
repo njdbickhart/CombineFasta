@@ -6,6 +6,7 @@
 package utils;
 
 import StrUtils.StrArray;
+import gziputils.ReaderReturn;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -93,14 +94,14 @@ public class FastqFileQuickSort {
          * @param identifier
 	 * @throws IOException
 	 */
-	public void splitChunks(InputStream in, String identifier){
+	public void splitChunks(Path inFile, String identifier){
             outputs.clear();
             this.identifier = identifier;
             BufferedReader br = null;
             List<String[]> lines = new ArrayList<>(maxChunkSize);
             log.log(Level.INFO, "[TXTFILESORT] Beginning sort routine for bin: " + identifier);
             try{
-                br = new BufferedReader(new InputStreamReader(in));
+                br = ReaderReturn.openFile(inFile.toFile());
                 //String line = null;
                 int currChunkSize = 0;
                 String head, seq, plus, qual;
@@ -110,7 +111,7 @@ public class FastqFileQuickSort {
                     qual = br.readLine();
                     
                     if(seq == null || plus == null || qual == null){
-                        log.log(Level.INFO, "[TXTFILESORT] Premature fastq file end for file: " + in.toString());
+                        log.log(Level.INFO, "[TXTFILESORT] Premature fastq file end for file: " + inFile.toString());
                         break;
                     }
 
@@ -149,10 +150,10 @@ public class FastqFileQuickSort {
                 log.log(Level.FINE, "[TXTFILESORT] Finished split chunk routine. Had files? " + this.hasData);
                 lines.clear();
             }catch(IOException io){
-                log.log(Level.SEVERE, "[TXTFILESORT] Error reading from inputstream: " + in.toString(), io);
+                log.log(Level.SEVERE, "[TXTFILESORT] Error reading from inputstream: " + inFile.toString(), io);
             }finally{
                 if ( br != null )try{br.close();}catch(Exception e){
-                    log.log(Level.SEVERE, "[TXTFILESORT] Error closing inputstream: " + in.toString(), e);
+                    log.log(Level.SEVERE, "[TXTFILESORT] Error closing inputstream: " + inFile.toString(), e);
                 }
             }
 	}
