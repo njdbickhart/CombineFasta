@@ -6,7 +6,6 @@
 package utils;
 
 import StrUtils.StrArray;
-import TempFiles.TempDataClass;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -17,7 +16,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -38,9 +36,9 @@ import java.util.logging.Logger;
  * @author Greg Cope
  *
  */
-public class TextFileQuickSort {
+public class FastqFileQuickSort {
         private final Comparator<String[]> sorter;
-	private int maxChunkSize = 100000000;
+	private int maxChunkSize = 1000000000;
 	private List<File> outputs = new ArrayList<>();
         // Changed temp dir to current working directory
 	private String tempDirectory = Paths.get("").toAbsolutePath().toString(); 
@@ -48,21 +46,21 @@ public class TextFileQuickSort {
         private final int[] colOrder;
         private boolean hasData = false;
         
-        private static final Logger log = Logger.getLogger(TextFileQuickSort.class.getName());
+        private static final Logger log = Logger.getLogger(FastqFileQuickSort.class.getName());
         private Path tempFile;
         private long lineCount = 0;
         private BloomFilter<String> bloom;
         private final double fp = 1.0E-15;
         private String identifier;
 
-        public TextFileQuickSort(String delimiter, int[] colOrder, String tmpoutbase){
+        public FastqFileQuickSort(String delimiter, int[] colOrder, String tmpoutbase){
 		this.sorter = new ComparatorDelegate(colOrder);
                 this.delimiter = delimiter;
                 this.colOrder = colOrder;
                 this.createTemp(Paths.get(tmpoutbase));
 	}
         
-	public TextFileQuickSort(Comparator<String[]> sorter, String delimiter, int[] colOrder, String tmpoutbase){
+	public FastqFileQuickSort(Comparator<String[]> sorter, String delimiter, int[] colOrder, String tmpoutbase){
 		this.sorter = sorter;
                 this.delimiter = delimiter;
                 this.colOrder = colOrder;
@@ -96,51 +94,62 @@ public class TextFileQuickSort {
 	 * @throws IOException
 	 */
 	public void splitChunks(InputStream in, String identifier){
-		outputs.clear();
-                this.identifier = identifier;
-		BufferedReader br = null;
-		List<String[]> lines = new ArrayList<>(maxChunkSize);
-                log.log(Level.INFO, "[TXTFILESORT] Beginning sort routine for bin: " + identifier);
-		try{
-			br = new BufferedReader(new InputStreamReader(in));
-			String line = null;
-			int currChunkSize = 0;
-			while ((line = br.readLine() ) != null ){
-                                this.hasData = true;
-                                this.lineCount++;
-				lines.add(line.split("\t"));
-				currChunkSize += line.length() + 1;
-				if ( currChunkSize >= maxChunkSize ){
-					currChunkSize = 0;
-					Collections.sort(lines, sorter);
-                                        double rand = Math.random();
-                                        String tmpfile = tempDirectory + "/tempsplit" + System.currentTimeMillis() + "." + rand;
-					File file = new File(tmpfile);
-                                        file.deleteOnExit();
-                                        log.log(Level.INFO, "[TXTFILESORT] Created new chunk temp file: " + tmpfile + " for bin: " + identifier);
-					outputs.add(file);
-					writeOut(lines, new FileOutputStream(file));
-					lines.clear();
-				}
-			}
-			//write out the remaining chunk
-			Collections.sort(lines, sorter);
+            outputs.clear();
+            this.identifier = identifier;
+            BufferedReader br = null;
+            List<String[]> lines = new ArrayList<>(maxChunkSize);
+            log.log(Level.INFO, "[TXTFILESORT] Beginning sort routine for bin: " + identifier);
+            try{
+                br = new BufferedReader(new InputStreamReader(in));
+                //String line = null;
+                int currChunkSize = 0;
+                String head, seq, plus, qual;
+                while ((head = br.readLine() ) != null ){
+                    seq = br.readLine();
+                    plus = br.readLine();
+                    qual = br.readLine();
+
+                    head = head.trim();
+                    seq = seq.trim();
+                    plus = plus.trim();
+                    qual = qual.trim();
+
+                    this.hasData = true;
+                    this.lineCount++;
+                    lines.add(new String[]{head, seq, plus, qual});
+                    currChunkSize += head.length() + seq.length() + plus.length() + qual.length() + 1;
+                    
+                    if ( currChunkSize >= maxChunkSize ){
+                        currChunkSize = 0;
+                        Collections.sort(lines, sorter);
                         double rand = Math.random();
                         String tmpfile = tempDirectory + "/tempsplit" + System.currentTimeMillis() + "." + rand;
-			File file = new File(tmpfile);
+                        File file = new File(tmpfile);
                         file.deleteOnExit();
-                        log.log(Level.FINE, "[TXTFILESORT] Created new chunk temp file: " + tmpfile + " for bin: " + identifier);
-			outputs.add(file);
-			writeOut(lines, new FileOutputStream(file));
-                        log.log(Level.FINE, "[TXTFILESORT] Finished split chunk routine. Had files? " + this.hasData);
-			lines.clear();
-		}catch(IOException io){
-			log.log(Level.SEVERE, "[TXTFILESORT] Error reading from inputstream: " + in.toString(), io);
-		}finally{
-			if ( br != null )try{br.close();}catch(Exception e){
-                            log.log(Level.SEVERE, "[TXTFILESORT] Error closing inputstream: " + in.toString(), e);
-                        }
-		}
+                        log.log(Level.INFO, "[TXTFILESORT] Created new chunk temp file: " + tmpfile + " for bin: " + identifier);
+                        outputs.add(file);
+                        writeOut(lines, new FileOutputStream(file));
+                        lines.clear();
+                    }
+                }
+                //write out the remaining chunk
+                Collections.sort(lines, sorter);
+                double rand = Math.random();
+                String tmpfile = tempDirectory + "/tempsplit" + System.currentTimeMillis() + "." + rand;
+                File file = new File(tmpfile);
+                file.deleteOnExit();
+                log.log(Level.FINE, "[TXTFILESORT] Created new chunk temp file: " + tmpfile + " for bin: " + identifier);
+                outputs.add(file);
+                writeOut(lines, new FileOutputStream(file));
+                log.log(Level.FINE, "[TXTFILESORT] Finished split chunk routine. Had files? " + this.hasData);
+                lines.clear();
+            }catch(IOException io){
+                log.log(Level.SEVERE, "[TXTFILESORT] Error reading from inputstream: " + in.toString(), io);
+            }finally{
+                if ( br != null )try{br.close();}catch(Exception e){
+                    log.log(Level.SEVERE, "[TXTFILESORT] Error closing inputstream: " + in.toString(), e);
+                }
+            }
 	}
 
 	/**
@@ -150,23 +159,23 @@ public class TextFileQuickSort {
 	 * @throws IOException
 	 */
 	private void writeOut(List<String[]> list, OutputStream os) throws IOException{
-		BufferedWriter writer = null;
-		try{
-			writer = new BufferedWriter(new OutputStreamWriter(os));
-			for ( String[] s : list ){
-				writer.write(StrArray.Join(s, delimiter));
-				writer.write(System.lineSeparator());
-			}
-			writer.flush();
-		}catch(IOException io){
-			log.log(Level.SEVERE, "[TXTFILESORT] Error writing to outputstream: " + os.toString(), io);
-		}finally{
-			if ( writer != null ){
-				try{writer.close();}catch(Exception e){
-                                    log.log(Level.SEVERE, "[TXTFILESORT] Error closing output stream!", e);
-                                }
-			}
-		}
+            BufferedWriter writer = null;
+            try{
+                writer = new BufferedWriter(new OutputStreamWriter(os));
+                for ( String[] s : list ){
+                        writer.write(StrArray.Join(s, delimiter));
+                        writer.write(System.lineSeparator());
+                }
+                writer.flush();
+            }catch(IOException io){
+                log.log(Level.SEVERE, "[TXTFILESORT] Error writing to outputstream: " + os.toString(), io);
+            }finally{
+                if ( writer != null ){
+                    try{writer.close();}catch(Exception e){
+                        log.log(Level.SEVERE, "[TXTFILESORT] Error closing output stream!", e);
+                    }
+                }
+            }
 	}
 
 	/**

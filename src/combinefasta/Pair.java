@@ -25,8 +25,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import utils.BloomFilter;
-import utils.TextFileQuickSort;
-import utils.TextFileQuickSort.QuickSortOutput;
+import utils.FastqFileQuickSort;
+import utils.FastqFileQuickSort.QuickSortOutput;
 
 /**
  *
@@ -53,7 +53,7 @@ public class Pair {
     
     public void run(){
         // Print the entries to temp files on single lines for easier sorting
-        File tempFor = new File(this.outbase + ".f.temp");
+        /*File tempFor = new File(this.outbase + ".f.temp");
         File tempRev = new File(this.outbase + ".r.temp");
         
         tempFor.deleteOnExit();
@@ -66,25 +66,25 @@ public class Pair {
         
         executor.shutdown();
         try {
-            executor.awaitTermination(12, TimeUnit.HOURS);
+        executor.awaitTermination(12, TimeUnit.HOURS);
         } catch (InterruptedException ex) {
-            log.log(Level.SEVERE, "Error terminating temp file thread generation pool!", ex);
+        log.log(Level.SEVERE, "Error terminating temp file thread generation pool!", ex);
         }
-        log.log(Level.INFO, "Completed initial temporary file generation");
+        log.log(Level.INFO, "Completed initial temporary file generation");*/
         
         // Sort the files in-place and add read names to Bloom filter
-        Map<String, File> preSortFiles = new HashMap<>();
+        Map<String, Path> preSortFiles = new HashMap<>();
 
-        preSortFiles.put("for", tempFor);
-        preSortFiles.put("rev", tempRev);
+        preSortFiles.put("for", this.forwardFile);
+        preSortFiles.put("rev", this.reverseFile);
         
         Map<String, QuickSortOutput> postSortOutput = preSortFiles.entrySet().parallelStream().map((f) -> {
-                TextFileQuickSort t = new TextFileQuickSort("\t", new int[]{0}, f.getValue().toPath().toString());
+                FastqFileQuickSort t = new FastqFileQuickSort("\t", new int[]{0}, f.getValue().toString());
                 try{
-                    t.splitChunks(new FileInputStream(f.getValue()), f.getKey());
+                    t.splitChunks(new FileInputStream(f.getValue().toFile()), f.getKey());
                     t.mergeChunks();
                 }catch(IOException ex){
-                    log.log(Level.SEVERE, "Could not split text file: " + f.getValue().toPath().toString(), ex);
+                    log.log(Level.SEVERE, "Could not split text file: " + f.getValue().toString(), ex);
                 }
                 return t.getOutput();
             }).collect(Collectors.toMap(p -> p.id, Function.identity()));
@@ -92,7 +92,7 @@ public class Pair {
         log.log(Level.INFO, "Completed sort routine");
         
         // Output reads to proper fastq format files
-        executor = Executors.newFixedThreadPool(2);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
         
         executor.execute(new FilterSortedTextFile(postSortOutput.get("for").output, 
                 this.outbase + ".1.fastq", 
@@ -135,6 +135,7 @@ public class Pair {
         @Override
         public void run() {
             BufferedWriter output = null;
+            long linesFiltered = 0, linesWritten = 0;
             try(BufferedReader input = Files.newBufferedReader(inputSortFile, Charset.defaultCharset())){
                 output = Files.newBufferedWriter(outputFastq, Charset.defaultCharset());
                 String line;
@@ -145,6 +146,9 @@ public class Pair {
                         String[] tsegs = line.split("\t");
                         output.write(StrUtils.StrArray.Join(tsegs, NL));
                         output.write(NL);
+                        linesWritten++;
+                    }else{
+                        linesFiltered++;
                     }
                 }
             }catch(IOException ex){
@@ -156,6 +160,9 @@ public class Pair {
                     log.log(Level.SEVERE, "Error closing output file!", ex);
                 }
             }
+            log.log(Level.INFO, "Finished writing file: " 
+                    + inputSortFile.toString() + ". Wrote: " + linesWritten 
+                    + " lines and filtered: " + linesFiltered + " one-sided reads");
         }
     }
 
