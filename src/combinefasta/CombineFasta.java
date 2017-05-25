@@ -14,7 +14,7 @@ import java.util.logging.Logger;
  * @author dbickhart
  */
 public class CombineFasta {
-    private static final String version = "0.0.4";
+    private static final String version = "0.0.5";
     private static final Logger log = Logger.getLogger(CombineFasta.class.getName());
     
     private static ArrayModeCmdLineParser PrepareCMDOptions(){
@@ -46,6 +46,17 @@ public class CombineFasta {
                         "\t-o\tOutput base read name [reads are output with a '.1.fastq' and '.2.fastq' extension]" + nl, 
                 "f:r:o:d|", 
                 "fro", 
+                "frod", 
+                "forward", "reverse", "output", "debug");
+        
+        cmd.AddMode("validate", 
+                "CombineFasta validate:" + nl +
+                        "Usage: java -jar CombineFasta.jar validate -f [input forward read fastq] -r [input reverse read fastq] -o [OPTIONAL: print validation stats to file]" + nl +
+                        "\t-f\tInput forward read fastq file" + nl+
+                        "\t-r\tInput reverse read fastq file" + nl +
+                        "\t-o\tOutput validation stats file [if not specified, validation stats are sent to STDOUT]" + nl, 
+                "f:r:o:d|", 
+                "fr", 
                 "frod", 
                 "forward", "reverse", "output", "debug");
         
