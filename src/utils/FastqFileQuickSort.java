@@ -108,6 +108,11 @@ public class FastqFileQuickSort {
                     seq = br.readLine();
                     plus = br.readLine();
                     qual = br.readLine();
+                    
+                    if(seq == null || plus == null || qual == null){
+                        log.log(Level.INFO, "[TXTFILESORT] Premature fastq file end for file: " + in.toString());
+                        break;
+                    }
 
                     head = head.trim();
                     seq = seq.trim();
@@ -274,6 +279,13 @@ public class FastqFileQuickSort {
         private void createTemp(Path path){
         
             this.tempFile = Paths.get(path.getFileName().toString() + ".sort.tmp");
+            
+            try {
+                this.tempFile.toFile().createNewFile();
+            } catch (IOException ex) {
+                log.log(Level.SEVERE, "[TXTFILESORT] ERROR! could not create output merged temp file: " + this.tempFile.toString());
+            }
+            
             this.tempFile.toFile().deleteOnExit();
 
             log.log(Level.INFO, "[TXTFILESORT] Private temp file: " + this.tempFile.toString());
