@@ -141,7 +141,7 @@ public class BufferedFastaReaderWriter {
                 continue;
             }else if (buffer[x] == '>'){
                 // Reached the end of the chromosome!
-                if(currentRun > 0){
+                if(currentRun > 0 && currentRun <= 59){
                     char[] tempBuff = Arrays.copyOfRange(buffer, 0, currentRun);
                     
                     output.write(String.copyValueOf(tempBuff) + nl);
@@ -151,7 +151,7 @@ public class BufferedFastaReaderWriter {
                 return ret;
             }
             
-            if(currentRun >= 60){
+            if(currentRun >= 59){
                 output.write(String.copyValueOf(outBuffer) + nl);
                 currentRun = 0;
             }

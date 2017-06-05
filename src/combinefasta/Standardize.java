@@ -45,6 +45,8 @@ public class Standardize {
             while((retVal = workhorse.readToNextChr(output, format)) != -1){
                 counter++;
             }
+            workhorse.close();
+            output.close();
         }catch(IOException ex){
             log.log(Level.SEVERE, "Error reading input fasta file!", ex);
         }
