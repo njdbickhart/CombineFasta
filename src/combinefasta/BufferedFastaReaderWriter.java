@@ -132,10 +132,12 @@ public class BufferedFastaReaderWriter {
     private int[] processBufferedChunk(int idx, int len, int currentPos, int currentRun, BufferedWriter output) throws IOException{
         char[] outBuffer = new char[60];
         final String nl = System.lineSeparator();
+        int TempOutBufferAdds = 0;
+        StringBuilder TempOutBuffer = new StringBuilder();
         for(int x = idx; x < len; x++){
-            if(buffer[x] != '\n' || buffer[x] != '\r' || buffer[x] != ' '){
-                 currentRun++;
-                 outBuffer[currentRun] = buffer[x];
+            if(buffer[x] != '\n' && buffer[x] != '\r' && buffer[x] != ' ' && buffer[x] != '>'){
+                outBuffer[currentRun] = buffer[x];
+                currentRun++; 
             }else if (buffer[x] == '\n' || buffer[x] == '\r' || buffer[x] == ' '){
                 // whitespace found! not counting
                 continue;
@@ -143,8 +145,9 @@ public class BufferedFastaReaderWriter {
                 // Reached the end of the chromosome!
                 if(currentRun > 0 && currentRun <= 59){
                     char[] tempBuff = Arrays.copyOfRange(buffer, 0, currentRun);
-                    
-                    output.write(String.copyValueOf(tempBuff) + nl);
+                    TempOutBuffer.append(String.copyValueOf(tempBuff)).append(nl);
+                    //output.write(String.copyValueOf(tempBuff) + nl);
+                    output.write(TempOutBuffer.toString());
                     currentRun = 0;
                 }
                 int[] ret = {0, x, currentPos};
@@ -152,7 +155,13 @@ public class BufferedFastaReaderWriter {
             }
             
             if(currentRun >= 59){
-                output.write(String.copyValueOf(outBuffer) + nl);
+                //output.write(String.copyValueOf(outBuffer) + nl);
+                TempOutBuffer.append(outBuffer).append(nl);
+                TempOutBufferAdds++;
+                if(TempOutBufferAdds > 1000){
+                    output.write(TempOutBuffer.toString());
+                    TempOutBufferAdds = 0;
+                }
                 currentRun = 0;
             }
             currentPos++;
