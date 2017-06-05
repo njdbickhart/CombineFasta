@@ -27,6 +27,7 @@ public class BufferedFastaReaderWriter {
     private int lastLen = 0;
     //private int lastCurPos = 0;
     private String curChr = "N/A";
+    private final char[] outBuffer = new char[60];
     
     public BufferedFastaReaderWriter(String fastaFile) throws FileNotFoundException{
         this.fasta = new FileReader(fastaFile);
@@ -145,7 +146,7 @@ public class BufferedFastaReaderWriter {
     // Returns three integers, first integer is the currentposition, second is the current run of N's, the third integer is only used if the first integer is zero
     // If the current position returned is 0, then the end of the chr was reached, and the second int is the last index value and the third is the current position
     private int[] processBufferedChunk(int idx, int len, int currentPos, int currentRun, BufferedWriter output) throws IOException{
-        char[] outBuffer = new char[60];
+        
         final String nl = System.lineSeparator();
         int TempOutBufferAdds = 0;
         StringBuilder TempOutBuffer = new StringBuilder();
