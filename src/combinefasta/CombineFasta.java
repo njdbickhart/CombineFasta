@@ -14,7 +14,7 @@ import java.util.logging.Logger;
  * @author dbickhart
  */
 public class CombineFasta {
-    private static final String version = "0.0.5";
+    private static final String version = "0.0.6";
     private static final Logger log = Logger.getLogger(CombineFasta.class.getName());
     
     private static ArrayModeCmdLineParser PrepareCMDOptions(){
@@ -24,7 +24,8 @@ public class CombineFasta {
                 "Usage: java -jar CombineFasta.jar [mode] [mode options]" + nl +
                 "\tModes:" + nl +
                 "\t\torder\tCombine and orient separate fasta files" + nl +
-                "\t\tpair\tRestore jumbled paired end fastq files" + nl, 
+                "\t\tpair\tRestore jumbled paired end fastq files" + nl +
+                "\t\tstandardize\tMake fasta lines standard in a file" + nl, 
         "order", "pair");
         
         cmd.AddMode("order", 
@@ -60,6 +61,17 @@ public class CombineFasta {
                 "frod", 
                 "forward", "reverse", "output", "debug");
         
+        cmd.AddMode("standardize", 
+                "CombineFasta standardize:" + nl +
+                        "Usage: java -jar CombineFasta.jar standardize -f [input fasta file] -o [output fasta file] -r [OPTIONAL: remove this suffix from fasta file entries]" + nl +
+                        "\t-f\tInput fasta file" + nl+
+                        "\t-r\tSuffix to remove from fasta entries" + nl +
+                        "\t-o\tOutput fasta file with corrected settings" + nl, 
+                "f:r:o:d|", 
+                "fo", 
+                "frod", 
+                "fasta", "format", "output", "debug");
+        
         return cmd;        
     }
     /**
@@ -86,6 +98,11 @@ public class CombineFasta {
                 log.log(Level.INFO, "Mode pair selected");
                 Pair pair = new Pair(cmd.GetValue("forward"), cmd.GetValue("reverse"), cmd.GetValue("output"));
                 pair.run();
+                break;
+            case "standardize":
+                log.log(Level.INFO, "Mode standardize selected");
+                Standardize standard = new Standardize(cmd);
+                standard.run();
                 break;
             default:
                 log.log(Level.SEVERE, "Error! Must designate a valid mode to continue!");
