@@ -185,6 +185,11 @@ public class BufferedFastaReaderWriter {
             }
             currentPos++;
         }
+        
+        if(TempOutBufferAdds > 0){
+            output.write(TempOutBuffer.toString());
+            TempOutBufferAdds = 0;
+        }
         int[] ret = {currentPos, currentRun, 0};
         return ret;
     }
