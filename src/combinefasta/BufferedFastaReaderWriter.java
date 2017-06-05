@@ -36,6 +36,10 @@ public class BufferedFastaReaderWriter {
         char[] chrname = new char[256]; 
         int chrnamebuff = 0, currentpos = 0, currentrun = 0, charRead = 0;
         
+        if(eof(fasta)){
+            return -1;
+        }
+        
         // Since the file entries are not bounded exclusively, we have to determine if we've read this file before or not
         if(lastIdx > 0 && lastLen > 0){
             getChrName(chrname, chrnamebuff, format);
@@ -102,6 +106,13 @@ public class BufferedFastaReaderWriter {
         return 0;
     }
     
+    private boolean eof (FileReader r) throws IOException {
+        r.mark(1);
+        int i = r.read();
+        r.reset();
+        return i < 0;
+    }
+    
     public void close() throws IOException{
         this.fasta.close();
     }
@@ -155,7 +166,7 @@ public class BufferedFastaReaderWriter {
                 return ret;
             }
             
-            if(currentRun >= 59){
+            if(currentRun > 59){
                 //output.write(String.copyValueOf(outBuffer) + nl);
                 TempOutBuffer.append(outBuffer).append(nl);
                 TempOutBufferAdds++;
