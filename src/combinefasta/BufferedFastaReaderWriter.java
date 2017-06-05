@@ -36,9 +36,9 @@ public class BufferedFastaReaderWriter {
         char[] chrname = new char[256]; 
         int chrnamebuff = 0, currentpos = 0, currentrun = 0, charRead = 0;
         
-        if(eof(fasta)){
-            return -1;
-        }
+        /*if(eof(fasta)){
+        return -1;
+        }*/
         
         // Since the file entries are not bounded exclusively, we have to determine if we've read this file before or not
         if(lastIdx > 0 && lastLen > 0){
@@ -51,8 +51,9 @@ public class BufferedFastaReaderWriter {
             int[] ret = processBufferedChunk(lastIdx, lastLen, 0, 0, output);
             if(ret[0] == 0){
                 // The end of the chromosome was reached! set the lengths
+                // necessary for chromosomes that fit within the buffer
                 this.lastIdx = ret[1];
-                                
+                return 0;
             }else{
                 currentpos = ret[0];
                 currentrun = ret[1];
@@ -76,6 +77,7 @@ public class BufferedFastaReaderWriter {
                     this.lastLen = charRead;
                     
                     // reached the end of the chromosome! Storing the remainder in the buffer!
+                    return 0;
                 }else{
                     currentpos = ret[0];
                     currentrun = ret[1];
@@ -101,6 +103,8 @@ public class BufferedFastaReaderWriter {
                     currentpos = ret[0];
                     currentrun = ret[1];
                 }
+            }else{
+                return -1;
             }
         }
         return 0;
