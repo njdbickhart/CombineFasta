@@ -134,6 +134,7 @@ public class BufferedFastaReaderWriter {
         final String nl = System.lineSeparator();
         int TempOutBufferAdds = 0;
         StringBuilder TempOutBuffer = new StringBuilder();
+        TempOutBuffer.ensureCapacity(61000);
         for(int x = idx; x < len; x++){
             if(buffer[x] != '\n' && buffer[x] != '\r' && buffer[x] != ' ' && buffer[x] != '>'){
                 outBuffer[currentRun] = buffer[x];
@@ -160,6 +161,8 @@ public class BufferedFastaReaderWriter {
                 TempOutBufferAdds++;
                 if(TempOutBufferAdds > 1000){
                     output.write(TempOutBuffer.toString());
+                    TempOutBuffer = new StringBuilder();
+                    TempOutBuffer.ensureCapacity(61000);
                     TempOutBufferAdds = 0;
                 }
                 currentRun = 0;
