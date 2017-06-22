@@ -14,7 +14,7 @@ import java.util.logging.Logger;
  * @author dbickhart
  */
 public class CombineFasta {
-    private static final String version = "0.0.6";
+    private static final String version = "0.0.7";
     private static final Logger log = Logger.getLogger(CombineFasta.class.getName());
     
     private static ArrayModeCmdLineParser PrepareCMDOptions(){
@@ -30,14 +30,15 @@ public class CombineFasta {
         
         cmd.AddMode("order", 
                 "CombineFasta order:" + nl +
-                        "Usage: java -jar CombineFasta.jar order -i [tab delim input] -o [output fasta] -p [padding bases]" + nl +
-                "\t-i\tInput fasta files in tab delimited format with orientations in second column" + nl +  
+                        "Usage: java -jar CombineFasta.jar order -i [tab delim input] -o [output fasta] -p [padding bases] -n [fasta name]" + nl +
+                "\t-i\tInput single entry fasta files in tab delimited format with orientations in second column" + nl +  
                         "\t-o\tOutput fasta file name" + nl +
-                        "\t-p\tNumber of N bases to pad fasta entries" + nl, 
-                "i:o:p:d|", 
+                        "\t-p\tNumber of N bases to pad fasta entries" + nl +
+                        "\t-n\tName of merged fasta sequence [default: \"merged\"]" + nl, 
+                "i:o:p:n:d|", 
                 "io", 
-                "iopd", 
-                "input", "output", "padding", "debug");
+                "iopnd", 
+                "input", "output", "padding", "name", "debug");
         
         cmd.AddMode("pair", 
                 "CombineFasta pair:" + nl +

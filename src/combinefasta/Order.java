@@ -29,6 +29,7 @@ public class Order {
     private final List<String> seq = new ArrayList<>();
     private boolean hasPadding = false;
     private int paddingBP;
+    private String fastaName;
     
     public Order(String fastaStr, String output, int padding){
         try(BufferedReader reader = Files.newBufferedReader(Paths.get(fastaStr))){
@@ -52,11 +53,17 @@ public class Order {
         }
         
         this.Output = Paths.get(output);
+        this.fastaName = "merged";
                 
         if(!(padding < 1)){
             this.hasPadding = true;
             this.paddingBP = padding;
         }
+    }
+    
+    public Order(String fastaStr, String output, int padding, String fastaName){
+        this(fastaStr, output, padding);
+        this.fastaName = "fastaName";
     }
     
     public void GenerateFasta(){
@@ -81,7 +88,7 @@ public class Order {
         String nl = System.lineSeparator();
         
         try(BufferedWriter output = Files.newBufferedWriter(Output, Charset.defaultCharset())){
-            output.write("> merged" + nl);
+            output.write(">" + this.fastaName + nl);
             
             StringBuilder builder = new StringBuilder(this.seq.size() + (this.seq.size() / 60) + 1);
             for(int x = 0; x < this.seq.size(); x++){
