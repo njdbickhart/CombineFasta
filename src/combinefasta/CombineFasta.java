@@ -14,7 +14,7 @@ import java.util.logging.Logger;
  * @author dbickhart
  */
 public class CombineFasta {
-    private static final String version = "0.0.7";
+    private static final String version = "0.0.8";
     private static final Logger log = Logger.getLogger(CombineFasta.class.getName());
     
     private static ArrayModeCmdLineParser PrepareCMDOptions(){
@@ -92,7 +92,11 @@ public class CombineFasta {
                 int padding = -1;
                 if(cmd.HasOpt("padding"))
                     padding = Integer.parseInt(cmd.GetValue("padding"));
-                Order order = new Order(cmd.GetValue("input"), cmd.GetValue("output"), padding);
+                Order order = null;
+                if(cmd.HasOpt("name"))
+                    order = new Order(cmd.GetValue("input"), cmd.GetValue("output"), padding, cmd.GetValue("name"));
+                else
+                    order = new Order(cmd.GetValue("input"), cmd.GetValue("output"), padding);
                 order.GenerateFasta();
                 break;
             case "pair":

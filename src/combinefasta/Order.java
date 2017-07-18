@@ -63,7 +63,7 @@ public class Order {
     
     public Order(String fastaStr, String output, int padding, String fastaName){
         this(fastaStr, output, padding);
-        this.fastaName = "fastaName";
+        this.fastaName = fastaName;
     }
     
     public void GenerateFasta(){
