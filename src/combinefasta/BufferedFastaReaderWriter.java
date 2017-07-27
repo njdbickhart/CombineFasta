@@ -163,8 +163,8 @@ public class BufferedFastaReaderWriter {
             }else if (buffer[x] == '\n' || buffer[x] == '\r' || buffer[x] == ' '){
                 // whitespace found! not counting
                 continue;
-            }else if (buffer[x] == '>'){
-                // Reached the end of the chromosome!
+            }else if (buffer[x] == '>' || x == len - 1){
+                // Reached the end of the chromosome or the end of the file!
                 if(currentRun > 0 && currentRun <= 59){
                     char[] tempBuff = Arrays.copyOfRange(outBuffer, 0, currentRun);
                     TempOutBuffer.append(String.copyValueOf(tempBuff)).append(nl);
