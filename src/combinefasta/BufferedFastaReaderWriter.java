@@ -29,6 +29,7 @@ public class BufferedFastaReaderWriter {
     private String curChr = "N/A";
     private final char[] outBuffer = new char[60];
     private final boolean changeName;
+   
     
     public BufferedFastaReaderWriter(String fastaFile, boolean changeName) throws FileNotFoundException{
         this.fasta = new FileReader(fastaFile);
@@ -73,7 +74,8 @@ public class BufferedFastaReaderWriter {
                 
                 int[] ret = processBufferedChunk(this.lastIdx, charRead, currentpos, currentrun, output);
                 if(charRead == -1){
-                    // reached the end of the file!
+                    // reached the end of the file for short chromosomes!
+                    
                     return -1;
                 }else if(ret[0] == 0){
                     this.lastIdx = ret[1];
@@ -157,14 +159,15 @@ public class BufferedFastaReaderWriter {
         StringBuilder TempOutBuffer = new StringBuilder();
         TempOutBuffer.ensureCapacity(61000);
         for(int x = idx; x < len; x++){
+
             if(buffer[x] != '\n' && buffer[x] != '\r' && buffer[x] != ' ' && buffer[x] != '>'){
                 outBuffer[currentRun] = buffer[x];
                 currentRun++; 
             }else if (buffer[x] == '\n' || buffer[x] == '\r' || buffer[x] == ' '){
                 // whitespace found! not counting
                 continue;
-            }else if (buffer[x] == '>' || x == len - 1){
-                // Reached the end of the chromosome or the end of the file!
+            }else if (buffer[x] == '>' ){
+                // Reached the end of the chromosome
                 if(currentRun > 0 && currentRun <= 59){
                     char[] tempBuff = Arrays.copyOfRange(outBuffer, 0, currentRun);
                     TempOutBuffer.append(String.copyValueOf(tempBuff)).append(nl);
@@ -190,10 +193,15 @@ public class BufferedFastaReaderWriter {
             }
             currentPos++;
         }
+        if(currentRun > 0){
+            // Test to ensure that current runs less than 60 are counted
+            char[] tempBuff = Arrays.copyOfRange(outBuffer, 0, currentRun);
+            TempOutBuffer.append(String.copyValueOf(tempBuff)).append(nl);
+            TempOutBufferAdds++;
+        }
         
         if(TempOutBufferAdds > 0){
             output.write(TempOutBuffer.toString());
-            TempOutBufferAdds = 0;
         }
         int[] ret = {currentPos, currentRun, 0};
         return ret;
