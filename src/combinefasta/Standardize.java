@@ -23,6 +23,7 @@ public class Standardize {
     private final Logger log = Logger.getLogger(Standardize.class.getName());
     private BufferedWriter output;
     private final String fasta;
+    private final boolean changeName;
     private final String format;
     
     public Standardize(ArrayModeCmdLineParser cmd){
@@ -34,13 +35,19 @@ public class Standardize {
         }
         
         this.fasta = cmd.GetValue("fasta");
-        this.format = cmd.GetValue("format");
+        if(cmd.HasOpt("format")){
+            this.format = cmd.GetValue("format");
+            this.changeName = true;
+        }else{
+            this.format = "";
+            this.changeName = false;
+        }
     }
     
     public void run(){
         int counter = 0;
         try{
-            BufferedFastaReaderWriter workhorse = new BufferedFastaReaderWriter(fasta);
+            BufferedFastaReaderWriter workhorse = new BufferedFastaReaderWriter(fasta, this.changeName);
             int retVal = 0;
             while((retVal = workhorse.readToNextChr(output, format)) != -1){
                 counter++;

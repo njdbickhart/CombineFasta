@@ -28,9 +28,11 @@ public class BufferedFastaReaderWriter {
     //private int lastCurPos = 0;
     private String curChr = "N/A";
     private final char[] outBuffer = new char[60];
+    private final boolean changeName;
     
-    public BufferedFastaReaderWriter(String fastaFile) throws FileNotFoundException{
+    public BufferedFastaReaderWriter(String fastaFile, boolean changeName) throws FileNotFoundException{
         this.fasta = new FileReader(fastaFile);
+        this.changeName = changeName;
     }
     
     public int readToNextChr(BufferedWriter output, String format) throws IOException{
@@ -140,7 +142,10 @@ public class BufferedFastaReaderWriter {
             chrnamebuff++;
             lastIdx++;
         }
-        this.curChr = String.copyValueOf(chrname).replaceAll(format, "").trim();
+        if(this.changeName)
+            this.curChr = String.copyValueOf(chrname).replaceAll(format, "").trim();
+        else
+            this.curChr = String.copyValueOf(chrname).trim();
     }
     
     // Returns three integers, first integer is the currentposition, second is the current run of N's, the third integer is only used if the first integer is zero
