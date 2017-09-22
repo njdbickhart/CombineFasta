@@ -27,6 +27,8 @@ public class FastaReader {
     private String CurHead;
     private String NextHead;
     private final List<String> seq = new ArrayList<>();
+    // A = 0, T = 1, G = 2, C =3, N = 4
+    private static final byte[] codes = {0, 1, 2, 3, 4};
     private boolean started = false;
     private static final Logger log = Logger.getLogger(FastaReader.class.getName());
     
