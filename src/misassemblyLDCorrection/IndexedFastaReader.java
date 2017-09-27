@@ -41,6 +41,10 @@ public class IndexedFastaReader {
     public IndexedFastaReader(Path Input){
         this.Input = Input;
         File index = new File(Input.toString() + ".fai");
+        if(!this.Input.toFile().canRead()){
+            log.log(Level.SEVERE, "Could not find input fasta file! Exiting...");
+            System.exit(-1);
+        }
         if(!index.canRead()){
             log.log(Level.SEVERE, "Could not find fasta index file for: " + Input.toString() + "!");
             System.exit(-1);
@@ -129,4 +133,7 @@ public class IndexedFastaReader {
         return this.CurHead;
     }
     
+    public Path getPath(){
+        return this.Input;
+    }
 }
