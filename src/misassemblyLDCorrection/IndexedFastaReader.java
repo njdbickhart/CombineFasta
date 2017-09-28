@@ -59,14 +59,21 @@ public class IndexedFastaReader {
         }
     }
     
+    public void LoadEntry(String chr, int start, int end){
+        try(RandomAccessFile fasta = new RandomAccessFile(this.Input.toFile(), "r")){
+            FastaIndexEntry entry = this.indexMap.get(chr);
+        }catch(IOException ex){
+            log.log(Level.SEVERE, "Error subsectioning fasta entry on coordinates: " + chr + ":" + start + "-" + end, ex);
+            System.exit(-1);
+        }
+    }
+    
     public void LoadEntry(String chr){
         try(RandomAccessFile fasta = new RandomAccessFile(this.Input.toFile(), "r")){
             FastaIndexEntry entry = this.indexMap.get(chr);
             int newlines = entry.length / 60; 
             byte[] len = new byte[newlines + entry.length];
-            
-            
-            
+                        
             int readBytes = fasta.read(len, entry.startByte, newlines + entry.length);
             if(readBytes != newlines + entry.length)
                 throw new IOException("Error accessing fasta entry via chr loading!");
@@ -127,7 +134,9 @@ public class IndexedFastaReader {
         }
     }
         
-    
+    public int getChrLen(String chr){
+        return this.indexMap.get(chr).length;
+    }
     
     public String getHead(){
         return this.CurHead;

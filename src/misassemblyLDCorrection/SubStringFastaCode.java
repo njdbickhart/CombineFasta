@@ -24,12 +24,17 @@ public class SubStringFastaCode {
     private final String chr;
     private final int start;
     private final int end;
+    private boolean isRev = false;
     
     public SubStringFastaCode(byte[] seqCode, String chr, int start, int end){
         this.seqCode = seqCode;
         this.chr = chr;
         this.start = start;
         this.end = end;
+    }
+    
+    public void setRevComp(){
+        this.isRev = true;
     }
     
     public String getChr(){
@@ -42,6 +47,10 @@ public class SubStringFastaCode {
     
     public int getEnd(){
         return this.end;
+    }
+    
+    public boolean getRevComp(){
+        return this.isRev;
     }
     
     public List<Character> getFwdSeq(){
