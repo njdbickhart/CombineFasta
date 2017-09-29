@@ -74,7 +74,7 @@ public class CombineFasta {
                 "frod", 
                 "fasta", "format", "output", "debug");
         
-        cmd.AddMode("misassembly", 
+        cmd.AddMode("missassembly", 
                 "CombineFasta missassembly:" + nl +
                         "Usage: java -jar CombineFasta.jar misassembly -s [input marker sam file] -j [input jellyfish db] -f [input fasta] -o [output basename]" + nl +
                         "\t-s\tA sam file with ordered map coordinates mapped t the assembly" + nl +

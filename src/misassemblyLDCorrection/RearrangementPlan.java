@@ -61,6 +61,7 @@ public class RearrangementPlan {
             this.coords = input.lines()
                     .filter((s) -> (! s.startsWith("@")))
                     .map((l) -> {return new markerCoords(l);})
+                    .filter((m) -> !m.isUnmapped())
                     .collect(Collectors.toList());
         }catch(IOException ex){
             log.log(Level.SEVERE, "Encountered error reading sam file!", ex);
