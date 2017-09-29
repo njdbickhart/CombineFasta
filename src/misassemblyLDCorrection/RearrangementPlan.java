@@ -22,6 +22,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -41,6 +42,7 @@ public class RearrangementPlan {
     //protected static final Pattern readMarkerOrder = Pattern.compile(".+\\.(.+)\\.(.+)");
     private List<markerCoords> coords;
     private final Map<String, List<BedFastaPlan>> mergedPlan = new HashMap<>();
+    private Set<String> unmodified;
     //private static final MergerUtils util = new MergerUtils();
     
     public RearrangementPlan(String samFile, String fasta){
@@ -124,15 +126,122 @@ public class RearrangementPlan {
             long diffChrs = s.getValue().stream()
                     .map(BedFastaPlan::Chr)
                     .count();
-            log.log(Level.INFO, "Original chr: " + chr + "\tsegments: " + num + "\tsegment chr counts: " + diffChrs);
+            log.log(Level.INFO, "[MERGESTATS] Original chr: " + chr + "\tsegments: " + num + "\tsegment chr counts: " + diffChrs);
         });
+        
+        // Identify unmodified chromosomes
+        this.unmodified = this.origin.getChrNames().stream()
+                .filter(s -> !this.mergedPlan.containsKey(s))
+                .collect(Collectors.toSet());
+        
+        log.log(Level.INFO, "[MERGESTATS] Number of chrs unchanged: " + this.unmodified.size());
         
         //Ensuring that the list is cleared from memory
         this.coords = null;
         System.gc();
     }
     
-    public void printOrderedListToFile(String outfile){
+    public void refineEdges(String JellyfishDb){
+        // Subroutine to query kmers via Jellyfish database to refine the coordinate space. 
+        // Rules:
+        // 1. traverse nonoverlapping 21 mers 5kb from each side per chromosome
+        // 2. terminate at the first run of 21 mers above 10 copies
+        // 3. if refinement doesn't work, keep the original coordinates
+        KmerRepeatClassifier workhorse = new KmerRepeatClassifier(JellyfishDb);
+        
+        this.mergedPlan.entrySet().stream()
+                .filter(s -> this.mergedPlan.get(s.getKey()).size() > 1)
+                .forEach((s) -> {
+                    List<BedFastaPlan> beds = s.getValue();
+                    FastaSequenceFile reader = new FastaSequenceFile(this.origin.getPath(), true);
+                    for(int x = 0; x < beds.size(); x++){
+                        String contig = beds.get(x).Chr();
+                        long oBegin = beds.get(x).Start();
+                        long oEnd = beds.get(x).End();
+                        if(x != beds.size() -1){
+                            // Work on the end coordinates if not at the end of the chromosome plan
+                            long nStart = oEnd - 5000;
+                            if(nStart <= 100){
+                                // terminate comparison with small fragments
+                                continue;
+                            }
+                            int newEnd = workhorse.RefineEndCoord(reader.getSubsequenceAt(contig, nStart, oEnd)
+                                    .getBaseString());
+                            if(newEnd != -1){
+                                beds.get(x).setEnd(newEnd);
+                                log.log(Level.INFO, "[REFINE] " + beds.get(x).toString() + " endRefine to: " + newEnd);
+                            }else
+                                log.log(Level.INFO, "[REFINE] " + beds.get(x).toString() + " endSkipped");                            
+                        }
+                        if(x != 0){
+                            // Work on the start coordinates if not at the start of the chromosome plan
+                            long nEnd = oBegin + 5000;
+                            if(nEnd > oEnd){
+                                // terminate comparisons that extend beyond the frag length
+                                continue;
+                            }
+                            int newStart = workhorse.RefineStartCoord(reader.getSubsequenceAt(contig, oBegin, nEnd)
+                                    .getBaseString());
+                            
+                            if(newStart != -1){
+                                beds.get(x).setStart(newStart);
+                                log.log(Level.INFO, "[REFINE] " + beds.get(x).toString() + " startRefine to: " + newStart);
+                            }else
+                                log.log(Level.INFO, "[REFINE] " + beds.get(x).toString() + " startSkipped");
+                        }
+                    }
+                });
+    }
+    
+    public void printOrderedListToAGP(String outfile){
+        try(BufferedWriter output = Files.newBufferedWriter(Paths.get(outfile), Charset.defaultCharset())){
+            // Write the modified plans
+            this.mergedPlan.entrySet().stream()
+                    .forEachOrdered((s)->{
+                        List<BedFastaPlan> beds = s.getValue();
+                        int prevend = 1;
+                        for(int x = 0; x < beds.size() -2; x++){
+                            Map<Integer, String> agp = beds.get(x).toAGP(prevend, x + 1, (beds.size() > 1));
+                            prevend = agp.keySet().iterator().next();
+                            String ovalue = agp.get(prevend);
+                            try {
+                                output.write(ovalue);
+                            } catch (IOException ex) {
+                                log.log(Level.SEVERE, "Error writing AGP entry to output file: " + outfile + "!", ex);
+                            }
+                        }
+                        if(beds.size() > 1){
+                            // write the last entry for the chromosome
+                            Map<Integer, String> agp = beds.get(beds.size() -1).toAGP(prevend, beds.size(), false);
+                            prevend = agp.keySet().iterator().next();
+                            String ovalue = agp.get(prevend);
+                            try {
+                                output.write(ovalue);
+                            } catch (IOException ex) {
+                                log.log(Level.SEVERE, "Error writing AGP entry to output file: " + outfile + "!", ex);
+                            }
+                        }                            
+                    });
+            
+            // Write unmodified contigs
+            this.unmodified.forEach((s) ->{
+                int length = this.origin.getChrLen(s);
+                StringBuilder out = new StringBuilder();
+                out.append(s).append("\t").append(1).append("\t").append(length).append("\t")
+                        .append(1).append("\t").append("D\t").append(s).append("\t").append(1)
+                        .append("\t").append(length).append("\t").append("+").append(System.lineSeparator());
+                try {
+                    output.write(out.toString());
+                } catch (IOException ex) {
+                    log.log(Level.SEVERE, "Error writing AGP entry to output file: " + outfile + "!", ex);
+                }
+            });
+        }catch(IOException ex){
+            log.log(Level.SEVERE, "Error writing AGP entry to output file: " + outfile + "!", ex);
+        }
+    }
+    
+    public void printOrderedListToFasta(String outfile){
         try(BufferedWriter output = Files.newBufferedWriter(Paths.get(outfile), Charset.defaultCharset())){
             // Trying HTSJDK subsectioning test
             FastaSequenceFile reader = new FastaSequenceFile(this.origin.getPath(), true);

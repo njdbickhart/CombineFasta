@@ -14,7 +14,7 @@ import java.util.logging.Logger;
  * @author dbickhart
  */
 public class CombineFasta {
-    private static final String version = "0.0.8";
+    private static final String version = "0.0.9";
     private static final Logger log = Logger.getLogger(CombineFasta.class.getName());
     
     private static ArrayModeCmdLineParser PrepareCMDOptions(){
@@ -25,7 +25,8 @@ public class CombineFasta {
                 "\tModes:" + nl +
                 "\t\torder\tCombine and orient separate fasta files" + nl +
                 "\t\tpair\tRestore jumbled paired end fastq files" + nl +
-                "\t\tstandardize\tMake fasta lines standard in a file" + nl, 
+                "\t\tstandardize\tMake fasta lines standard in a file" + nl +
+                "\t\tmissassembly\tCorrect assembly based on aligned map markers" + nl, 
         "order", "pair");
         
         cmd.AddMode("order", 
@@ -73,6 +74,19 @@ public class CombineFasta {
                 "frod", 
                 "fasta", "format", "output", "debug");
         
+        cmd.AddMode("misassembly", 
+                "CombineFasta missassembly:" + nl +
+                        "Usage: java -jar CombineFasta.jar misassembly -s [input marker sam file] -j [input jellyfish db] -f [input fasta] -o [output basename]" + nl +
+                        "\t-s\tA sam file with ordered map coordinates mapped t the assembly" + nl +
+                        "\t-f\tInput samtools indexed fasta file" + nl+
+                        "\t-j\tThe jellyfish 21 mer database file for the fasta" + nl +
+                        "\t-o\tOutput file basename" + nl, 
+                "s:f:j:o:d|", 
+                "sfjo", 
+                "sfjod", 
+                "sam", "fasta", "jellydb", "output", "debug");
+                        
+        
         return cmd;        
     }
     /**
@@ -108,6 +122,11 @@ public class CombineFasta {
                 log.log(Level.INFO, "Mode standardize selected");
                 Standardize standard = new Standardize(cmd);
                 standard.run();
+                break;
+            case "missassembly":
+                log.log(Level.INFO, "Mode missassembly selected");
+                Missassembly missassembly = new Missassembly(cmd);
+                missassembly.Run();
                 break;
             default:
                 log.log(Level.SEVERE, "Error! Must designate a valid mode to continue!");
