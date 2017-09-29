@@ -286,8 +286,8 @@ public class RearrangementPlan {
             String[] segs = line.split("\t");
             String[] oSegs = ProcessReadName(segs[0]);
             
-            this.oChr = oSegs[0];
-            this.oPos = Integer.parseInt(oSegs[1]);
+            this.oChr = oSegs[1];
+            this.oPos = Integer.parseInt(oSegs[2]);
             
             this.nChr = segs[2];
             this.nPos = Integer.parseInt(segs[3]);
@@ -295,7 +295,7 @@ public class RearrangementPlan {
         
         private String[] ProcessReadName(String name){
             String[] elements = name.split("\\.");
-            return Arrays.copyOfRange(elements, 1, 2);
+            return elements;
         }
         
         public void setPrevMarker(markerCoords prev){
