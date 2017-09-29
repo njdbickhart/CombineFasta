@@ -226,7 +226,7 @@ public class RearrangementPlan {
             
             // Write unmodified contigs
             this.unmodified.forEach((s) ->{
-                int length = this.origin.getChrLen(s);
+                long length = this.origin.getChrLen(s);
                 StringBuilder out = new StringBuilder();
                 out.append(s).append("\t").append(1).append("\t").append(length).append("\t")
                         .append(1).append("\t").append("D\t").append(s).append("\t").append(1)
@@ -263,7 +263,7 @@ public class RearrangementPlan {
         }
         if(coord.nextMarker == null || !coord.nextMarker.nChr.equals(coord.nextMarker.nChr)){
             // end of the chromosome
-            end = this.origin.getChrLen(coord.nChr);
+            end = (int)this.origin.getChrLen(coord.nChr);
         }else{
             // Average of the two coords + 1 to facilitate overlap
             end = (coord.nextMarker.nPos + coord.nPos / 2) + 1;

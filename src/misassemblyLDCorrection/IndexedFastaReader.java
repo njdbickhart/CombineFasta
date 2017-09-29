@@ -72,10 +72,10 @@ public class IndexedFastaReader {
     public void LoadEntry(String chr){
         try(RandomAccessFile fasta = new RandomAccessFile(this.Input.toFile(), "r")){
             FastaIndexEntry entry = this.indexMap.get(chr);
-            int newlines = entry.length / 60; 
-            byte[] len = new byte[newlines + entry.length];
+            int newlines = (int)(entry.length / 60); 
+            byte[] len = new byte[newlines + (int)entry.length];
                         
-            int readBytes = fasta.read(len, entry.startByte, newlines + entry.length);
+            int readBytes = fasta.read(len, (int)entry.startByte, newlines + (int)entry.length);
             if(readBytes != newlines + entry.length)
                 throw new IOException("Error accessing fasta entry via chr loading!");
             
@@ -135,7 +135,7 @@ public class IndexedFastaReader {
         }
     }
         
-    public int getChrLen(String chr){
+    public long getChrLen(String chr){
         return this.indexMap.get(chr).length;
     }
     

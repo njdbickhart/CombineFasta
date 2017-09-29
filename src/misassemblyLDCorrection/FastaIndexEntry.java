@@ -11,9 +11,9 @@ package misassemblyLDCorrection;
  */
 public class FastaIndexEntry {
     public final String name;
-    public final int length;
-    public final int startByte;
-    public final int lineLen;
+    public final long length;
+    public final long startByte;
+    public final long lineLen;
     public boolean isModified = false;
     
     public FastaIndexEntry(String line){
@@ -21,9 +21,9 @@ public class FastaIndexEntry {
         String[] segs = line.split("\t");
         
         name = segs[0];
-        length = Integer.parseInt(segs[1]);
-        startByte = Integer.parseInt(segs[2]);
-        lineLen = Integer.parseInt(segs[3]);
+        length = Long.parseLong(segs[1]);
+        startByte = Long.parseLong(segs[2]);
+        lineLen = Long.parseLong(segs[3]);
     }
     
     public String getName(){
