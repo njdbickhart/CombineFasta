@@ -17,6 +17,7 @@ public class BedFastaPlan extends BedSimple{
     public boolean isRev;
     public final String aChr;
     public int aStart;
+    public int counter = 0;
     
     public BedFastaPlan(String c, int s, int e, String ac, int as) {
         super(c, s, e, null);
@@ -34,6 +35,10 @@ public class BedFastaPlan extends BedSimple{
     
     public void SetActualStart(int start){
         this.aStart = start;
+    }
+    
+    public void incCounter(){
+        this.counter++;
     }
     
     @Override
