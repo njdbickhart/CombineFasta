@@ -68,18 +68,5 @@ public class RearrangementPlanTest {
         // TODO review the generated test code and remove the default call to fail.
         fail("The test case is a prototype.");
     }
-
-    /**
-     * Test of printOrderedListToFasta method, of class RearrangementPlan.
-     */
-    @Test
-    public void testPrintOrderedListToFasta() {
-        System.out.println("printOrderedListToFasta");
-        String outfile = "";
-        RearrangementPlan instance = null;
-        instance.printOrderedListToFasta(outfile);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
-    }
     
 }

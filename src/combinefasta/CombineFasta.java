@@ -14,7 +14,7 @@ import java.util.logging.Logger;
  * @author dbickhart
  */
 public class CombineFasta {
-    private static final String version = "0.0.9";
+    private static final String version = "0.0.10";
     private static final Logger log = Logger.getLogger(CombineFasta.class.getName());
     
     private static ArrayModeCmdLineParser PrepareCMDOptions(){
@@ -85,6 +85,17 @@ public class CombineFasta {
                 "sfjo", 
                 "sfjod", 
                 "sam", "fasta", "jellydb", "output", "debug");
+        
+        cmd.AddMode("agp2fasta", 
+                "CombineFasta agp2fasta: " + nl + 
+                        "Usage: java -jar CombineFasta.jar agp2fasta -f [original fasta] -a [agp file] -o [output fasta name]" + nl +
+                        "\t-f\tThe input fasta to be subsectioned for incorporation into the AGP file" + nl +
+                        "\t-a\tThe agp file for ordering fasta subsections" + nl +
+                        "\t-o\tThe full output name of the resultant fasta file" + nl, 
+                "f:a:o:d|", 
+                "fao", 
+                "faod", 
+                "fasta", "agp", "output", "debug");
                         
         
         return cmd;        
@@ -127,6 +138,11 @@ public class CombineFasta {
                 log.log(Level.INFO, "Mode missassembly selected");
                 Missassembly missassembly = new Missassembly(cmd);
                 missassembly.Run();
+                break;
+            case "agp2fasta":
+                log.log(Level.INFO, "Mode agp2fasta selected");
+                Agp agp = new Agp(cmd);
+                agp.run();
                 break;
             default:
                 log.log(Level.SEVERE, "Error! Must designate a valid mode to continue!");

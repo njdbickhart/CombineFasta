@@ -34,8 +34,8 @@ public class Missassembly {
         log.log(Level.INFO, "Beginning marker plan mapping");
         rearrange.CreateMarkerPlan();
         
-        //log.log(Level.INFO, "Starting refinement routine");
-        //rearrange.refineEdges(jellyDB);
+        log.log(Level.INFO, "Starting refinement routine");
+        rearrange.refineEdges(jellyDB);
         
         log.log(Level.INFO, "Printing out AGP file");
         rearrange.printOrderedListToAGP(this.outbase + ".agp");

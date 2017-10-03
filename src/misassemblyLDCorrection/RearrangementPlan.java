@@ -136,7 +136,7 @@ public class RearrangementPlan {
                 BedFastaPlan current = existing.get(x);
                 BedFastaPlan previous = existing.get(x - 1);
                 BedFastaPlan future = existing.get(x + 1);
-                if(current.counter < 5 && previous.counter > 5 && future.counter > 5){
+                if(current.counter < 2 && previous.counter > 2 && future.counter > 2){
                     // Small segment between two larger ones
                     if(previous.End() + 50000 < future.Start() && previous.Chr().equals(future.Chr())
                             && previous.isRev == future.isRev){
@@ -210,9 +210,9 @@ public class RearrangementPlan {
                                     .getBaseString());
                             if(newEnd != -1){
                                 beds.get(x).setEnd(newEnd);
-                                log.log(Level.INFO, "[REFINE] " + beds.get(x).toString() + " endRefine to: " + newEnd);
+                                log.log(Level.INFO, "[REFINE] " + beds.get(x).toString() + "\tendRefine\tto: " + newEnd);
                             }else
-                                log.log(Level.INFO, "[REFINE] " + beds.get(x).toString() + " endSkipped");                            
+                                log.log(Level.INFO, "[REFINE] " + beds.get(x).toString() + "\tendSkipped");                            
                         }
                         if(x != 0){
                             // Work on the start coordinates if not at the start of the chromosome plan
@@ -226,9 +226,9 @@ public class RearrangementPlan {
                             
                             if(newStart != -1){
                                 beds.get(x).setStart(newStart);
-                                log.log(Level.INFO, "[REFINE] " + beds.get(x).toString() + " startRefine to: " + newStart);
+                                log.log(Level.INFO, "[REFINE] " + beds.get(x).toString() + "\tstartRefine\tto: " + newStart);
                             }else
-                                log.log(Level.INFO, "[REFINE] " + beds.get(x).toString() + " startSkipped");
+                                log.log(Level.INFO, "[REFINE] " + beds.get(x).toString() + "\tstartSkipped");
                         }
                     }
                 });
