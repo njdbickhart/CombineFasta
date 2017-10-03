@@ -8,8 +8,11 @@ package misassemblyLDCorrection;
 import combinefasta.BufferedFastaReaderWriter;
 import file.BedSimple;
 import htsjdk.samtools.reference.FastaSequenceFile;
+import htsjdk.samtools.reference.FastaSequenceIndex;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -79,8 +82,10 @@ public class RearrangementPlan {
         coords.get(0).setNextMarker(coords.get(1));
         coords.get(0).setOrder(0);
         for(int x = 1; x < coords.size() - 1; x++){
-            coords.get(x).setPrevMarker(coords.get(x - 1));
-            coords.get(x).setNextMarker(coords.get(x + 1));
+            coords.get(x).setPrevMarker(
+                    (coords.get(x - 1).nChr.equals(coords.get(x).nChr))? coords.get(x - 1) : null);
+            coords.get(x).setNextMarker(
+                    (coords.get(x + 1).nChr.equals(coords.get(x).nChr)? coords.get(x + 1) : null));
             coords.get(x).setOrder(x);
         }
         coords.get(coords.size() - 1).setOrder(coords.size() -1);
@@ -109,9 +114,13 @@ public class RearrangementPlan {
                     // Check if this is a rev comp join
                     if(current.order - coords.get(x - 1).order < 0){
                         // The merger is a rev comp join
+                        if(query.Start() > ref.End())
+                            log.log(Level.WARNING, "REV logic! Attempted to refine end of: " + ref.toString() + " to " + query.toString());
                         ref.setStart(query.Start());
                         ref.isRev = true;
                     }else{
+                        if(query.End() < ref.Start())
+                            log.log(Level.WARNING, "BAD logic! Attempted to refine end of: " + ref.toString() + " to " + query.toString());
                         ref.setEnd(query.End());
                     }
                     ref.incCounter();
@@ -124,41 +133,45 @@ public class RearrangementPlan {
                 this.mergedPlan.put(current.oChr, new ArrayList<>());
                 this.mergedPlan.get(current.oChr).add(convertCoordToBed(current));
             }
+            lastChr = current.oChr;
         }
         log.log(Level.INFO, "Finished marker plan");
         
         // Merge smaller events
-        this.mergedPlan.entrySet().stream().forEach((s) -> {
-            String chr = s.getKey();
-            List<BedFastaPlan> existing = s.getValue();
-            List<BedFastaPlan> merged = new ArrayList<>();
-            for(int x = 1; x < existing.size() - 1; x++){
-                BedFastaPlan current = existing.get(x);
-                BedFastaPlan previous = existing.get(x - 1);
-                BedFastaPlan future = existing.get(x + 1);
-                if(current.counter < 2 && previous.counter > 2 && future.counter > 2){
-                    // Small segment between two larger ones
-                    if(previous.End() + 50000 < future.Start() && previous.Chr().equals(future.Chr())
-                            && previous.isRev == future.isRev){
-                        int end = utils.MergerUtils.most(previous.End(), future.End());
-                        int start = utils.MergerUtils.least(previous.Start(), future.End());
-                        BedFastaPlan temp = new BedFastaPlan(previous.Chr(), 
-                                start, end, previous.getActualChr(), previous.getActualStart());
-                        temp.isRev = previous.isRev;
-                        merged.add(temp);
-                        x += 2;
+        // Temporarily disabled
+        if(false){
+            this.mergedPlan.entrySet().stream().forEach((s) -> {
+                String chr = s.getKey();
+                List<BedFastaPlan> existing = s.getValue();
+                List<BedFastaPlan> merged = new ArrayList<>();
+                for(int x = 1; x < existing.size() - 1; x++){
+                    BedFastaPlan current = existing.get(x);
+                    BedFastaPlan previous = existing.get(x - 1);
+                    BedFastaPlan future = existing.get(x + 1);
+                    if(current.counter < 2 && previous.counter > 2 && future.counter > 2){
+                        // Small segment between two larger ones
+                        if(previous.End() + 50000 < future.Start() && previous.Chr().equals(future.Chr())
+                                && previous.isRev == future.isRev){
+                            int end = utils.MergerUtils.most(previous.End(), future.End());
+                            int start = utils.MergerUtils.least(previous.Start(), future.End());
+                            BedFastaPlan temp = new BedFastaPlan(previous.Chr(), 
+                                    start, end, previous.getActualChr(), previous.getActualStart());
+                            temp.isRev = previous.isRev;
+                            merged.add(temp);
+                            x += 2;
+                            continue;
+                        }
+                    }else if(!previous.Chr().equals(chr) && previous.counter < 5){
+                        // Small segment that may be a mismapped marker
                         continue;
                     }
-                }else if(!previous.Chr().equals(chr) && previous.counter < 5){
-                    // Small segment that may be a mismapped marker
-                    continue;
+                    merged.add(previous);
                 }
-                merged.add(previous);
-            }
-            int sizeDiff = existing.size() - merged.size();
-            log.log(Level.INFO, "[MERGESEGS] Original chr: " + chr + "\tmerged " + sizeDiff + " smallers segments.");
-            this.mergedPlan.put(chr, merged);
-        });
+                int sizeDiff = existing.size() - merged.size();
+                log.log(Level.INFO, "[MERGESEGS] Original chr: " + chr + "\tmerged " + sizeDiff + " smallers segments.");
+                this.mergedPlan.put(chr, merged);
+            });
+        }
         
         // Generate current chromosome segment stats
         this.mergedPlan.entrySet().stream().forEach((s) -> {
@@ -189,28 +202,41 @@ public class RearrangementPlan {
         // 2. terminate at the first run of 21 mers above 10 copies
         // 3. if refinement doesn't work, keep the original coordinates
         KmerRepeatClassifier workhorse = new KmerRepeatClassifier(JellyfishDb);
+        FastaSequenceIndex index = new FastaSequenceIndex(new File(this.origin.getPath().toAbsolutePath() + ".fai"));
+        IndexedFastaSequenceFile reader = new IndexedFastaSequenceFile(this.origin.getPath(), index);
+        
         
         this.mergedPlan.entrySet().stream()
                 .filter(s -> this.mergedPlan.get(s.getKey()).size() > 1)
                 .forEach((s) -> {
                     List<BedFastaPlan> beds = s.getValue();
-                    FastaSequenceFile reader = new FastaSequenceFile(this.origin.getPath(), true);
+                    
                     for(int x = 0; x < beds.size(); x++){
                         String contig = beds.get(x).Chr();
                         long oBegin = beds.get(x).Start();
                         long oEnd = beds.get(x).End();
+                        
+                        long actualE = this.origin.getChrLen(contig);
+                        if(oEnd > actualE){
+                            log.log(Level.WARNING, "[WARN] Actual subsequence size of chr: " + contig + " was: " + actualE);
+                            oEnd = actualE;
+                            beds.get(x).End();
+                        }
+                        
                         if(x != beds.size() -1){
                             // Work on the end coordinates if not at the end of the chromosome plan
                             long nStart = oEnd - 5000;
                             if(nStart <= 100){
                                 // terminate comparison with small fragments
                                 continue;
-                            }
+                            }                           
+                            
                             int newEnd = workhorse.RefineEndCoord(reader.getSubsequenceAt(contig, nStart, oEnd)
                                     .getBaseString());
                             if(newEnd != -1){
-                                beds.get(x).setEnd(newEnd);
-                                log.log(Level.INFO, "[REFINE] " + beds.get(x).toString() + "\tendRefine\tto: " + newEnd);
+                                int tval = (int)oEnd - ((newEnd + 1) * 21);
+                                beds.get(x).setEnd(tval);
+                                log.log(Level.INFO, "[REFINE] " + beds.get(x).toString() + "\tendRefine\tto: " + tval);
                             }else
                                 log.log(Level.INFO, "[REFINE] " + beds.get(x).toString() + "\tendSkipped");                            
                         }
@@ -225,8 +251,9 @@ public class RearrangementPlan {
                                     .getBaseString());
                             
                             if(newStart != -1){
-                                beds.get(x).setStart(newStart);
-                                log.log(Level.INFO, "[REFINE] " + beds.get(x).toString() + "\tstartRefine\tto: " + newStart);
+                                int tval = (int)oBegin - ((newStart + 1) * 21);
+                                beds.get(x).setStart(tval);
+                                log.log(Level.INFO, "[REFINE] " + beds.get(x).toString() + "\tstartRefine\tto: " + tval);
                             }else
                                 log.log(Level.INFO, "[REFINE] " + beds.get(x).toString() + "\tstartSkipped");
                         }

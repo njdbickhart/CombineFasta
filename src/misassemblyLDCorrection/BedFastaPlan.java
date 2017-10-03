@@ -61,7 +61,7 @@ public class BedFastaPlan extends BedSimple{
                 .append(end).append("\t").append((isRev)? "-" : "+").append("\t")
                 .append(System.lineSeparator());
         if(addGap)
-            output.append(this.aChr).append("\t").append(prevend+this.end).append("\t")
+            output.append(this.aChr).append("\t").append(prevend+len).append("\t")
                     .append(prevend+len + 100).append("\t").append(counter +1).append("\t")
                     .append("N\t").append(100).append("\t").append("scaffold").append("\t")
                     .append("yes").append("\t").append("map").append(System.lineSeparator());

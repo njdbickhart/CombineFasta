@@ -63,9 +63,9 @@ public class KmerRepeatClassifier {
         boolean isWindows = System.getProperty("os.name")
                 .toLowerCase().startsWith("windows");
         if(isWindows){
-            builder.command("cmd.exe", "jellyfish", "query", this.jellyfishDB, query);
+            builder.command("jellyfish", "query", this.jellyfishDB, query);
         }else{
-            builder.command("sh", "jellyfish", "query", this.jellyfishDB, query);
+            builder.command("jellyfish", "query", this.jellyfishDB, query);
         }
         List<Integer> values = null;
         
@@ -83,7 +83,7 @@ public class KmerRepeatClassifier {
         return values;
     }
     
-    private String generateSectionedKmers(String seq){
+    public String generateSectionedKmers(String seq){
         String[] segs = seq.split("(?<=\\G.{21})");
         return StrUtils.StrArray.Join(segs, " ");
     }

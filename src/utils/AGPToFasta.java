@@ -7,8 +7,11 @@ package utils;
 
 import file.BedAbstract;
 import htsjdk.samtools.reference.FastaSequenceFile;
+import htsjdk.samtools.reference.FastaSequenceIndex;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -21,6 +24,8 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import misassemblyLDCorrection.FastaIndexEntry;
+import misassemblyLDCorrection.IndexedFastaReader;
 
 /**
  *
@@ -45,9 +50,9 @@ public class AGPToFasta {
     @SuppressWarnings("deprecation")
     public void GenerateFastaFromAGP(String outputFasta){
         // Load all AGP entries into a mapped list
+        log.log(Level.INFO, "Beginning AGP entry loading");
         try(BufferedReader input = Files.newBufferedReader(agpFile, Charset.defaultCharset())){
             List<AGPEntry> data = input.lines()
-                    .filter(s -> s.startsWith("#"))
                     .map(s -> new AGPEntry(s)).collect(Collectors.toList());
             
             // Store the AGP entries into a map by chromosome
@@ -57,8 +62,15 @@ public class AGPToFasta {
             log.log(Level.SEVERE, "Error reading input AGP file!", ex);
         }
         
+        log.log(Level.INFO, "Loaded: " + this.AGPEntries.keySet().size() + "AGP chromosomes");
+        
         try(BufferedWriter output = Files.newBufferedWriter(Paths.get(outputFasta), Charset.defaultCharset())){
-            FastaSequenceFile reader = new FastaSequenceFile(this.fastaFile, true);
+            FastaSequenceIndex index = new FastaSequenceIndex(new File(this.fastaFile + ".fai"));
+            IndexedFastaSequenceFile reader = new IndexedFastaSequenceFile(this.fastaFile, index);
+            
+            IndexedFastaReader dictionary = new IndexedFastaReader(this.fastaFile);
+            
+            
             // Extract the ordered list of chromosomes (numerically)
             List<String> orderedChrs = this.AGPEntries.keySet().stream().collect(Collectors.toList());
             orderedChrs.sort((s, s1) -> {
@@ -84,6 +96,10 @@ public class AGPToFasta {
                             temp.add(t);
                         seq.addAll(temp);
                     }else{
+                        if(b.End() > dictionary.getChrLen(b.Chr())){
+                            b.setEnd((int)dictionary.getChrLen(b.Chr()));
+                            log.log(Level.WARNING, "Chr lengths for " + b.Chr() + " exceeded expected length, set value to: " + b.End());
+                        }
                         byte[] temp = reader.getSubsequenceAt(b.Chr(), b.Start(), b.End()).getBases();
                         log.log(Level.INFO, "[AGPSUB] Pulling subsection of chr " + s + "\t" + b.Chr() + ":" + b.Start() + "-" + b.End() 
                                 + " at current byte count: " + seq.size());
@@ -100,12 +116,16 @@ public class AGPToFasta {
                 try{
                     output.write(">" + s + nl);
                     for(int x = 0; x < seq.size(); x++){
-                        builder.append(seq.get(x).byteValue());
+                        builder.append((char)(seq.get(x) & 0xff));
                         if(x != 0 && (x + 1) % 100 == 0){
                             builder.append(nl);
                             output.write(builder.toString());
                             builder = new StringBuilder(101);
                         }
+                    }
+                    if(builder.length() > 0){
+                        builder.append(nl);
+                        output.write(builder.toString());
                     }
                     log.log(Level.INFO, "[AGPWRITE] Wrote chromosome " + s + " size of: " + seq.size());
                 }catch(IOException ex){

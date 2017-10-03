@@ -14,7 +14,7 @@ import java.util.logging.Logger;
  * @author dbickhart
  */
 public class CombineFasta {
-    private static final String version = "0.0.10";
+    private static final String version = "0.0.11";
     private static final Logger log = Logger.getLogger(CombineFasta.class.getName());
     
     private static ArrayModeCmdLineParser PrepareCMDOptions(){
@@ -26,7 +26,8 @@ public class CombineFasta {
                 "\t\torder\tCombine and orient separate fasta files" + nl +
                 "\t\tpair\tRestore jumbled paired end fastq files" + nl +
                 "\t\tstandardize\tMake fasta lines standard in a file" + nl +
-                "\t\tmissassembly\tCorrect assembly based on aligned map markers" + nl, 
+                "\t\tmissassembly\tCorrect assembly based on aligned map markers" + nl +
+                "\t\tagp2fasta\tGenerate a new fasta by subsectioning a reference fasta" + nl, 
         "order", "pair");
         
         cmd.AddMode("order", 
