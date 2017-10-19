@@ -34,6 +34,9 @@ public class Missassembly {
         log.log(Level.INFO, "Beginning marker plan mapping");
         rearrange.CreateMarkerPlan();
         
+        log.log(Level.INFO, "Plotting points");
+        rearrange.plotGraph(this.outbase + ".map.png");
+        
         log.log(Level.INFO, "Starting refinement routine");
         rearrange.refineEdges(jellyDB);
         

@@ -5,11 +5,22 @@
  */
 package misassemblyLDCorrection;
 
-import combinefasta.BufferedFastaReaderWriter;
-import file.BedSimple;
+import de.erichseifert.gral.data.DataSeries;
+import de.erichseifert.gral.data.DataTable;
+import de.erichseifert.gral.graphics.Drawable;
+import de.erichseifert.gral.graphics.DrawingContext;
+import de.erichseifert.gral.graphics.Label;
+import de.erichseifert.gral.plots.XYPlot;
+import de.erichseifert.gral.plots.colors.LinearGradient;
+import de.erichseifert.gral.plots.points.DefaultPointRenderer2D;
+import de.erichseifert.gral.plots.points.PointRenderer;
 import htsjdk.samtools.reference.FastaSequenceFile;
 import htsjdk.samtools.reference.FastaSequenceIndex;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -19,18 +30,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import utils.MergerUtils;
+import javax.imageio.ImageIO;
 
 /**
  * The main workhorse for identifying which chromosomes and segments need to be rearranged
@@ -190,9 +199,68 @@ public class RearrangementPlan {
         
         log.log(Level.INFO, "[MERGESTATS] Number of chrs unchanged: " + this.unmodified.size());
         
-        //Ensuring that the list is cleared from memory
+        /*//Ensuring that the list is cleared from memory
+        Removed so that a separate plot method could be derived
+        this.coords = null;
+        System.gc();*/
+    }
+    
+    public void plotGraph(String outfile){
+        // Assign data to table and count number of elements
+        int numElements = this.coords.size();
+        Map<String, Long> chrElementCount = this.coords.stream()
+                .map(s -> s.oChr)
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+        
+        // Sorting chromosome segment order by number of originally mapped elements
+        List<String> chrOrder = chrElementCount.entrySet().stream()
+                .sorted(Comparator.comparingLong(s -> s.getValue()))
+                .map(s -> s.getKey())
+                .collect(Collectors.toList());
+        
+        // Generating table and data series
+        DataTable data = new DataTable(Integer.class, Integer.class);
+        for(int x = 0; x < numElements; x++){
+            data.add(x, this.coords.get(x).order);
+        }
+        
+        DataSeries series1 = new DataSeries("Marker Order", data, 0, 1);
+        XYPlot plot = new XYPlot(series1);
+        plot.getTitle().setText("Relative marker order in assembly");
+        
+        
+        // Style the points to be a small rectangle
+        PointRenderer points = new DefaultPointRenderer2D();
+        points.setShape(new Rectangle2D.Double(-1, -1, 1, 1));
+        points.setColor(new LinearGradient(Color.BLUE, Color.CYAN, Color.DARK_GRAY, Color.GRAY, Color.lightGray, Color.GREEN, Color.YELLOW, Color.ORANGE, Color.RED));
+        plot.setPointRenderers(data, points);
+        
+        plot.getAxisRenderer(XYPlot.AXIS_X).setLabel(new Label("Original Marker Order"));
+        plot.getAxisRenderer(XYPlot.AXIS_Y).setLabel(new Label("New Marker Order"));
+        
+        writePNG(plot, numElements, new File(outfile));
+        
+        // After writing, we can clear the original marker elements
         this.coords = null;
         System.gc();
+    }
+    
+    private void writePNG(Drawable data, int numEntries, File outputFile){
+        int width = numEntries * 3, height = numEntries * 3;
+        
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = image.createGraphics();
+        graphics.setPaintMode();
+        
+        DrawingContext ctx = new DrawingContext(graphics);
+        data.setBounds(0, 0, width, height);
+        data.draw(ctx);
+        
+        try {
+            ImageIO.write(image, "png", outputFile);
+        } catch (IOException ex) {
+            log.log(Level.SEVERE, "Error writing plot to PNG!", ex);
+        }
     }
     
     public void refineEdges(String JellyfishDb){

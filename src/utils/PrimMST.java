@@ -5,7 +5,9 @@
  */
 package utils;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -61,21 +63,26 @@ public class PrimMST {
         }
     }
     
-    public Iterable<GraphEdge> edges(){
-        LinkedList<GraphEdge> queue = new LinkedList<>();
+    public List<LinkedList<GraphEdge>> edges(){
+        List<LinkedList<GraphEdge>> queue = new ArrayList<>();
+        int idx = 0;
+        queue.add(new LinkedList<>());
         for(int v = 0; v < edgeTo.length; v++){
             GraphEdge e = edgeTo[v];
             if(e != null)
-                queue.push(e);
+                queue.get(idx).push(e);
+            else{
+                // New forest
+                queue.add(new LinkedList<>());
+                idx++;
+            }
         }
         return queue;
     }
     
     public double sumWeight(){
-        double sum = 0.0;
-        for(GraphEdge e : this.edges()){
-            sum += e.weight();
-        }
-        return sum;
+        return this.edges().parallelStream()
+                .flatMap(List::stream)
+                .reduce(0.0, (sum, p) -> sum += p.weight(), (sum1, sum2) -> sum1 + sum2);
     }
 }

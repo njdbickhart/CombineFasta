@@ -14,7 +14,7 @@ import java.util.logging.Logger;
  * @author dbickhart
  */
 public class CombineFasta {
-    private static final String version = "0.0.11";
+    private static final String version = "0.0.12";
     private static final Logger log = Logger.getLogger(CombineFasta.class.getName());
     
     private static ArrayModeCmdLineParser PrepareCMDOptions(){
