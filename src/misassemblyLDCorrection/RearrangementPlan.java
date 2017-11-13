@@ -12,19 +12,24 @@ import de.erichseifert.gral.graphics.DrawingContext;
 import de.erichseifert.gral.graphics.Label;
 import de.erichseifert.gral.plots.XYPlot;
 import de.erichseifert.gral.plots.colors.LinearGradient;
+import de.erichseifert.gral.plots.lines.DefaultLineRenderer2D;
+import de.erichseifert.gral.plots.lines.LineRenderer;
 import de.erichseifert.gral.plots.points.DefaultPointRenderer2D;
 import de.erichseifert.gral.plots.points.PointRenderer;
 import htsjdk.samtools.reference.FastaSequenceFile;
 import htsjdk.samtools.reference.FastaSequenceIndex;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.Stroke;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -83,7 +88,7 @@ public class RearrangementPlan {
                 
         // sort the list and process into a bed file
         // First, sort by new marker maps and link prior markers together
-        coords.sort(Comparator.comparing(markerCoords::getNChr)
+        coords.sort(new NewChrSort()
                 .thenComparingInt(markerCoords::getNPos));
         log.log(Level.INFO, "Finished sort by origin fasta coordinates");
         
@@ -101,7 +106,7 @@ public class RearrangementPlan {
         
         // Now sort by original coordinate order
         // Such a better syntax for comparisons here! 
-        coords.sort(Comparator.comparing(markerCoords::getOChr)
+        coords.sort(new OrgChrSort()
                 .thenComparingInt(markerCoords::getOPos));
         log.log(Level.INFO, "Finished sort by marker order coordinates");
         
@@ -147,8 +152,8 @@ public class RearrangementPlan {
         log.log(Level.INFO, "Finished marker plan");
         
         // Merge smaller events
-        // Temporarily disabled
-        if(false){
+        // Temporarily disabled if the conditional is uncommented
+        //if(false){
             this.mergedPlan.entrySet().stream().forEach((s) -> {
                 String chr = s.getKey();
                 List<BedFastaPlan> existing = s.getValue();
@@ -180,7 +185,7 @@ public class RearrangementPlan {
                 log.log(Level.INFO, "[MERGESEGS] Original chr: " + chr + "\tmerged " + sizeDiff + " smallers segments.");
                 this.mergedPlan.put(chr, merged);
             });
-        }
+        //}
         
         // Generate current chromosome segment stats
         this.mergedPlan.entrySet().stream().forEach((s) -> {
@@ -212,11 +217,16 @@ public class RearrangementPlan {
                 .map(s -> s.oChr)
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
         
-        // Sorting chromosome segment order by number of originally mapped elements
-        List<String> chrOrder = chrElementCount.entrySet().stream()
-                .sorted(Comparator.comparingLong(s -> s.getValue()))
-                .map(s -> s.getKey())
-                .collect(Collectors.toList());
+        // Sorting chromosome segment order by current coord chr set
+        List<String> chrOrder = this.coords.stream()
+                .map(markerCoords::getOChr)
+                .collect(Collectors.toSet())
+                .stream().sorted((s, s1) ->{
+                            if(utils.MergerUtils.isNumeric(s) 
+                                    && utils.MergerUtils.isNumeric(s1)){
+                                return Integer.compare(Integer.parseInt(s), Integer.parseInt(s1));
+                            }
+                            return s.compareTo(s1);}).collect(Collectors.toList());
         
         // Generating table and data series
         DataTable data = new DataTable(Integer.class, Integer.class);
@@ -231,12 +241,34 @@ public class RearrangementPlan {
         
         // Style the points to be a small rectangle
         PointRenderer points = new DefaultPointRenderer2D();
-        points.setShape(new Rectangle2D.Double(-1, -1, 1, 1));
+        points.setShape(new Rectangle2D.Double(-2, -2, 2, 2));
         points.setColor(new LinearGradient(Color.BLUE, Color.CYAN, Color.DARK_GRAY, Color.GRAY, Color.lightGray, Color.GREEN, Color.YELLOW, Color.ORANGE, Color.RED));
         plot.setPointRenderers(data, points);
         
+        // Chromosome boundary lines
+        Map<Double, String> tickPositions = new HashMap<>();
+        double prevPos = 0;
+        for(String chr : chrOrder){
+            tickPositions.put(chrElementCount.get(chr) + prevPos, chr);
+            prevPos += chrElementCount.get(chr);
+            log.log(Level.INFO, "[PLOTTING] Chr " + chr + " tick mark set at: " + prevPos);
+        } 
+        
         plot.getAxisRenderer(XYPlot.AXIS_X).setLabel(new Label("Original Marker Order"));
         plot.getAxisRenderer(XYPlot.AXIS_Y).setLabel(new Label("New Marker Order"));
+        plot.getAxisRenderer(XYPlot.AXIS_X).setTicksAutoSpaced(false);
+        plot.getAxisRenderer(XYPlot.AXIS_Y).setTicksAutoSpaced(false);
+        
+        plot.getAxisRenderer(XYPlot.AXIS_X).setCustomTicks(tickPositions);
+        plot.getAxisRenderer(XYPlot.AXIS_Y).setCustomTicks(tickPositions);
+        plot.getAxisRenderer(XYPlot.AXIS_X).setTickLabelsVisible(true);
+        plot.getAxisRenderer(XYPlot.AXIS_Y).setTickLabelsVisible(true);
+        plot.getAxisRenderer(XYPlot.AXIS_X).setTickLabelsOutside(false);
+        plot.getAxisRenderer(XYPlot.AXIS_Y).setTickLabelsOutside(false); 
+        plot.getAxisRenderer(XYPlot.AXIS_X).setIntersection(-Double.MAX_VALUE);
+        plot.getAxisRenderer(XYPlot.AXIS_Y).setIntersection(-Double.MAX_VALUE);
+        plot.getAxisRenderer(XYPlot.AXIS_X).setMinorTicksVisible(false);
+        plot.getAxisRenderer(XYPlot.AXIS_Y).setMinorTicksVisible(false);
         
         writePNG(plot, numElements, new File(outfile));
         
@@ -246,7 +278,7 @@ public class RearrangementPlan {
     }
     
     private void writePNG(Drawable data, int numEntries, File outputFile){
-        int width = numEntries * 3, height = numEntries * 3;
+        int width = 8000, height = 8000;
         
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = image.createGraphics();
@@ -333,6 +365,12 @@ public class RearrangementPlan {
         try(BufferedWriter output = Files.newBufferedWriter(Paths.get(outfile), Charset.defaultCharset())){
             // Write the modified plans
             this.mergedPlan.entrySet().stream()
+                    .sorted( (s, s1) ->{
+                            if(utils.MergerUtils.isNumeric(s.getKey()) 
+                                    && utils.MergerUtils.isNumeric(s1.getKey())){
+                                return Integer.compare(Integer.parseInt(s.getKey()), Integer.parseInt(s1.getKey()));
+                            }
+                            return s.getKey().compareTo(s1.getKey());})
                     .forEachOrdered((s)->{
                         List<BedFastaPlan> beds = s.getValue();
                         int prevend = 1;
@@ -407,6 +445,44 @@ public class RearrangementPlan {
         }
         value = new BedFastaPlan(coord.nChr, start, end, coord.oChr, coord.oPos);
         return value;
+    }
+    
+    
+    protected class OrgChrSort implements Comparator<markerCoords>, Serializable{
+
+        @Override
+        public int compare(markerCoords t, markerCoords t1) {
+            if(utils.MergerUtils.isNumeric(t.getOChr()) 
+                    && utils.MergerUtils.isNumeric(t1.getOChr())){
+                return Integer.compare(Integer.parseInt(t.getOChr()), Integer.parseInt(t1.getOChr()));
+            }else if(utils.MergerUtils.isNumeric(t.getOChr()) 
+                    && !utils.MergerUtils.isNumeric(t1.getOChr()))
+                return -1;
+            else if(!utils.MergerUtils.isNumeric(t.getOChr())
+                    && utils.MergerUtils.isNumeric(t1.getOChr()))
+                return 1;
+            return t.getOChr().compareTo(t1.getOChr());
+        }
+        
+    }
+    
+    // Numerical and String sorting of chromosome names
+    protected class NewChrSort implements Comparator<markerCoords>, Serializable{
+
+        @Override
+        public int compare(markerCoords t, markerCoords t1) {
+            if(utils.MergerUtils.isNumeric(t.getNChr()) 
+                    && utils.MergerUtils.isNumeric(t1.getNChr())){
+                return Integer.compare(Integer.parseInt(t.getNChr()), Integer.parseInt(t1.getNChr()));
+            }else if(utils.MergerUtils.isNumeric(t.getNChr()) 
+                    && !utils.MergerUtils.isNumeric(t1.getNChr()))
+                return -1;
+            else if(!utils.MergerUtils.isNumeric(t.getNChr())
+                    && utils.MergerUtils.isNumeric(t1.getNChr()))
+                return 1;
+            return t.getNChr().compareTo(t1.getNChr());
+        }
+    
     }
     
     protected class markerCoords{
