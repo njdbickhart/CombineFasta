@@ -60,6 +60,60 @@ public class IndexedFastaReader {
         }
     }
     
+    private enum FaiState{
+        START, // Default state
+        CHRINTERNAL, // Has a contig name
+        CHRCOUNT, // Need to count sequence lines
+        PREVSPACE; // error flag to ensure that there are no double-spaces in the fasta
+    }
+    
+    public int GenerateIndex(Path Input, File index){
+        long len = 0, lineLen = -1, lineBpLen = -1; 
+        long offset = 0;
+        String contig = null;
+        FaiState state = FaiState.START;
+        final String nl = System.lineSeparator();
+        try(BufferedReader input = Files.newBufferedReader(Input, Charset.defaultCharset())){
+            String line = null;
+            while((line = input.readLine()) != null){
+                if(line.equals(nl)){
+                    // An empty line is only tolerated in the middle of
+                    if(state == FaiState.START)
+                        IndexFailure("Error! The fasta file is not allowed to start with an empty line!");
+                    else if(state == FaiState.PREVSPACE)
+                        IndexFailure("Error! Identified two empty lines in a row! Please check to see if the file is not malformed.");
+                    else{
+                        state = FaiState.PREVSPACE;
+                        offset += nl.length();
+                    }
+                }
+                
+                if(line.startsWith(">")){
+                    if(state == FaiState.CHRINTERNAL){
+                        FastaIndexEntry temp = new FastaIndexEntry(contig, len, offset, lineBpLen, lineLen);
+                        this.indexMap.put(contig, temp);
+                        log.log(Level.FINE, "Generated index entry: " + temp.toString());
+                    }
+                    offset += len + line.length();
+                    String[] segs = line.trim().split("\\s+");
+                    contig = segs[0].replaceFirst(">", "");
+                    state = FaiState.CHRINTERNAL;
+                }else if(state == FaiState.START)
+                    IndexFailure("Error! Did not encounter a valid fasta header sequence! The first line consisted of: " + line);
+                
+                
+            }
+        }catch(IOException ex){
+            log.log(Level.SEVERE, "Error in reading fasta file during index generation!", ex);
+        }
+        return 0;
+    }
+    
+    private void IndexFailure(String message){
+        log.log(Level.SEVERE, message);
+        System.exit(-1);
+    }
+    
     public void LoadEntry(String chr, int start, int end){
         try(RandomAccessFile fasta = new RandomAccessFile(this.Input.toFile(), "r")){
             FastaIndexEntry entry = this.indexMap.get(chr);

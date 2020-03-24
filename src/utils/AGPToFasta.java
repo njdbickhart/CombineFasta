@@ -116,7 +116,7 @@ public class AGPToFasta {
                 try{
                     output.write(">" + s + nl);
                     for(int x = 0; x < seq.size(); x++){
-                        builder.append((char)(seq.get(x) & 0xff));
+                        builder.append(Character.toUpperCase((char)(seq.get(x) & 0xff)));
                         if(x != 0 && (x + 1) % 100 == 0){
                             builder.append(nl);
                             output.write(builder.toString());
@@ -144,15 +144,19 @@ public class AGPToFasta {
             char c = (char)(array[x] & 0xff);
             switch(c){
                 case 'T':
+                case 't':
                     comp[current++] = 'A';
                     break;
                 case 'A':
+                case 'a':
                     comp[current++] = 'T';
                     break;
                 case 'G':
+                case 'g':
                     comp[current++] = 'C';
                     break;
                 case 'C':
+                case 'c':
                     comp[current++] = 'G';
                     break;
                 default:
@@ -175,12 +179,14 @@ public class AGPToFasta {
         public final int aEnd;
         public final ORIENT orient;
         public final boolean isGap;
+        public int gapLen;
         
         public AGPEntry(String agpLine){
             String[] segs = agpLine.split("\t");
             
             switch(segs[4]){
                 case "D":
+                case "A":
                     super.chr = segs[5];
                     super.start = Integer.parseInt(segs[6]);
                     super.end = Integer.parseInt(segs[7]);
@@ -209,6 +215,7 @@ public class AGPToFasta {
                     this.aStart = this.start;
                     this.aEnd = this.end;
                     this.isGap = true;
+                    this.gapLen = Integer.parseInt(segs[5]);
             }
         }
         
@@ -224,7 +231,7 @@ public class AGPToFasta {
         }
         
         public int getGapLen(){
-            return (isGap)? this.end - this.start : 0;
+            return (isGap)? this.gapLen : 0;
         }
     }
     
