@@ -62,4 +62,56 @@ echo -e "new_scaffold_seg2.fa\t-" >> contig_order.list
 java -jar ~/binaries/CombineFasta/store/CombineFasta.jar order -i contig_order.list -o my_new_fasta.fa -p 100 -n "newChr"
 ```
 
-More usage cases to come!
+#### agp2fasta mode
+
+Contrary to the name, this mode allows both bed and agp file formats to be used. The output product is a new scaffold fasta derived from the instructions in the agp or bed file. 
+
+General usage:
+
+```bash
+java -Xmx14g -jar store/CombineFasta.jar agp2fasta
+CombineFasta agp2fasta:
+Usage: java -jar CombineFasta.jar agp2fasta -f [original fasta] -a [agp file] -o [output fasta name]
+NOTE: select EITHER -b or -a for input! AGP (-a) input is preferentially used
+        -f      The input fasta to be subsectioned for incorporation into the AGP file
+        -b      A bed file [1-3 fasta file coordinates, 4 final scaffold name, 5 order integer, 6 orientation {+/-}]
+        -a      The agp file for ordering fasta subsections
+        -i      (Used only with Bed format input) The length of gap sequence [100]
+        -o      The full output name of the resultant fasta file
+
+```
+
+As noted in the usage statement, you should either use "-b" or "-a" for your input instruction file. The AGP file should follow NCBI file format specifications. The bed file must have the following columns:
+
+1. Chromosome in original fasta
+2. Start position in original fasta
+3. End position in original fasta
+4. Final Scaffold name
+5. The order in the scaffold (whole numbers from 1 to N, indicating how to organize the segments)
+6. The orientation of the segment from the original fasta
+
+####NOTE: Bed files do not need gap entries -- these are added automatically after each segment
+
+Here is an example use:
+
+```bash
+# BED INSTRUCTIONS
+# plan.bed contents:
+# contig_2	1	200	scaffold_1	1	+
+# contig_3	1	200	scaffold_1	3	+
+# contig_1	1	200	scaffold_1	2	-
+# contig_3	101	200	scaffold_2	1	-
+# contig_1	51	100	scaffold_2	2	+
+
+java -Xmx14g -jar CombineFasta.jar agp2fasta -b plan.bed -i 100 -f original.fasta -o output.fasta
+
+# AGP INSTRUCTIONS
+# plan.agp contents:
+# scaffold_1	1	200	1	W	contig_2	1	200	+
+# scaffold_1	201	300	2	N	100	scaffold	yes	na
+# scaffold_1	301	500	3	W	contig_1	1	200	-
+# scaffold_1	501	600	4	N	100	scaffold	yes	na
+# scaffold_1	601	800	5	W	contig_3	1	200	+
+
+java -Xmx14g -jar CombineFasta.jar agp2fasta -a plan.agp -f original.fasta -o output.fasta
+```
