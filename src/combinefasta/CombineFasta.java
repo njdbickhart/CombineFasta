@@ -14,7 +14,7 @@ import java.util.logging.Logger;
  * @author dbickhart
  */
 public class CombineFasta {
-    private static final String version = "0.0.15";
+    private static final String version = "0.0.16";
     private static final Logger log = Logger.getLogger(CombineFasta.class.getName());
     
     private static ArrayModeCmdLineParser PrepareCMDOptions(){
@@ -90,13 +90,16 @@ public class CombineFasta {
         cmd.AddMode("agp2fasta", 
                 "CombineFasta agp2fasta: " + nl + 
                         "Usage: java -jar CombineFasta.jar agp2fasta -f [original fasta] -a [agp file] -o [output fasta name]" + nl +
+                        "NOTE: select EITHER -b or -a for input! AGP (-a) input is preferentially used" + nl +
                         "\t-f\tThe input fasta to be subsectioned for incorporation into the AGP file" + nl +
+                        "\t-b\tA bed file [1-3 fasta file coordinates, 4 final scaffold name, 5 order integer, 6 orientation {+/-}]" + nl +
                         "\t-a\tThe agp file for ordering fasta subsections" + nl +
+                        "\t-i\t(Used only with Bed format input) The length of gap sequence [100]" + nl +
                         "\t-o\tThe full output name of the resultant fasta file" + nl, 
-                "f:a:o:d|", 
-                "fao", 
-                "faod", 
-                "fasta", "agp", "output", "debug");
+                "f:a:b:i:o:d|", 
+                "fo", 
+                "fabiod", 
+                "fasta", "agp", "bed", "interval", "output", "debug");
                         
         
         return cmd;        
