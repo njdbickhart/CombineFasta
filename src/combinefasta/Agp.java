@@ -22,6 +22,7 @@ public class Agp {
     private final boolean isBed;
     private String bed;
     private int interval;
+    private boolean reorder = false;
     
     public Agp(ArrayModeCmdLineParser cmd){
         this.fasta = cmd.GetValue("fasta");
@@ -39,15 +40,18 @@ public class Agp {
             }
             this.isBed = true;
         }
+        
+        if(cmd.HasOpt("reorder"))
+            this.reorder = true;
     }
     
     public void run(){
         if(this.isBed){
-            AGPToFasta workhorse = new AGPToFasta(this.fasta, this.bed, this.interval);
+            AGPToFasta workhorse = new AGPToFasta(this.fasta, this.bed, this.interval, this.reorder);
             
             workhorse.GenerateFastaFromBed(output);
         }else{
-            AGPToFasta workhorse = new AGPToFasta(this.fasta, this.agp);
+            AGPToFasta workhorse = new AGPToFasta(this.fasta, this.agp, this.reorder);
 
             workhorse.GenerateFastaFromAGP(output);
         }

@@ -14,7 +14,7 @@ import java.util.logging.Logger;
  * @author dbickhart
  */
 public class CombineFasta {
-    private static final String version = "0.0.16";
+    private static final String version = "0.0.17";
     private static final Logger log = Logger.getLogger(CombineFasta.class.getName());
     
     private static ArrayModeCmdLineParser PrepareCMDOptions(){
@@ -95,11 +95,12 @@ public class CombineFasta {
                         "\t-b\tA bed file [1-3 fasta file coordinates, 4 final scaffold name, 5 order integer, 6 orientation {+/-}]" + nl +
                         "\t-a\tThe agp file for ordering fasta subsections" + nl +
                         "\t-i\t(Used only with Bed format input) The length of gap sequence [100]" + nl +
+                        "\t-r\tConserve original chromosome order from the bed/agp file [Flag; default = False]" + nl +
                         "\t-o\tThe full output name of the resultant fasta file" + nl, 
-                "f:a:b:i:o:d|", 
+                "f:a:b:i:o:r|d|", 
                 "fo", 
                 "fabiod", 
-                "fasta", "agp", "bed", "interval", "output", "debug");
+                "fasta", "agp", "bed", "interval", "output", "reorder","debug");
                         
         
         return cmd;        

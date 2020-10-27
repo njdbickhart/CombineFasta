@@ -20,6 +20,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,22 +39,25 @@ public class AGPToFasta {
     private final Logger log = Logger.getLogger(AGPToFasta.class.getName());
     private final Path fastaFile;
     private final Path agpFile;
+    private final boolean reorder;
     private int interval;
     private Map<String, List<AGPEntry>> AGPEntries;
+    private List<String> chrOrder = new ArrayList<>();
     private final static String nl = System.lineSeparator();
     
-    public AGPToFasta(Path fastaFile, Path agpFile){
+    public AGPToFasta(Path fastaFile, Path agpFile, boolean reorder){
         this.fastaFile = fastaFile;
         this.agpFile = agpFile;
+        this.reorder = reorder;
     }
     
-    public AGPToFasta(String fastaFile, String agpFile){
-        this(Paths.get(fastaFile), Paths.get(agpFile));
+    public AGPToFasta(String fastaFile, String agpFile, boolean reorder){
+        this(Paths.get(fastaFile), Paths.get(agpFile), reorder);
     }
     
     // Bed file input constructor
-    public AGPToFasta(String fastaFile, String bedFile, int interval){
-        this(Paths.get(fastaFile), Paths.get(bedFile));
+    public AGPToFasta(String fastaFile, String bedFile, int interval, boolean reorder){
+        this(Paths.get(fastaFile), Paths.get(bedFile), reorder);
         this.interval = interval;
     }
     
@@ -64,6 +68,11 @@ public class AGPToFasta {
             List<AGPEntry> data = input.lines()
                     .map(s -> new AGPEntry(s, this.interval, false))
                     .collect(Collectors.toList());
+            
+            // If the user specified that the original order is to be preserved, save that
+            if(this.reorder){
+                setChrOrder(data);
+            }
             
             // sort by Chromosome so we can interleave gaps
             Map<String, List<AGPEntry>> temp = data.stream()
@@ -105,6 +114,25 @@ public class AGPToFasta {
         writeFasta(outputFasta);
         log.log(Level.INFO, "Finished writing fasta file from AGP!");
     }
+
+    private void setChrOrder(List<AGPEntry> data) {
+        Set<String> seen = new HashSet<>();
+        for(int i = 0; i < data.size(); i++){
+            String curr = data.get(i).Chr();
+            if(i != 0){
+                String prev = data.get(i -1).Chr();
+                if(!(curr.equals(prev)) && seen.contains(curr))
+                    log.log(Level.INFO, "Possible unsorted Bed input file! Scaffold: " + curr + " has been seen before in this file!");
+                else if(!(curr.equals(prev))){
+                    seen.add(prev);
+                    this.chrOrder.add(prev);
+                }
+            }
+        }
+        String fchr = data.get(data.size() - 1).Chr();
+        if(!seen.contains(fchr))
+            this.chrOrder.add(fchr);
+    }
     
     
     public void GenerateFastaFromAGP(String outputFasta){
@@ -113,6 +141,11 @@ public class AGPToFasta {
         try(BufferedReader input = Files.newBufferedReader(agpFile, Charset.defaultCharset())){
             List<AGPEntry> data = input.lines()
                     .map(s -> new AGPEntry(s)).collect(Collectors.toList());
+            
+            // If the user specified that the original order is to be preserved, save that
+            if(this.reorder){
+                setChrOrder(data);
+            }
             
             // Store the AGP entries into a map by chromosome
             this.AGPEntries = data.stream()
@@ -156,16 +189,22 @@ public class AGPToFasta {
                 System.exit(-1);
             }
             
-            // Extract the ordered list of chromosomes (numerically)
-            List<String> orderedChrs = this.AGPEntries.keySet().stream().collect(Collectors.toList());
-            orderedChrs.sort((s, s1) -> {
-                if(utils.MergerUtils.isNumeric(s) && utils.MergerUtils.isNumeric(s1)){
-                    return Integer.compare(Integer.parseInt(s), Integer.parseInt(s1));
-                }
-                return s.compareTo(s1);
-            });
+            // New version -- if we need to keep the original bed file order, then use that here.
+            if(this.reorder){
+                log.log(Level.FINE, "User order maintained for output");
+            }else{
+                // Extract the ordered list of chromosomes (numerically)
+                log.log(Level.FINE, "Sorting chromosomes by numerical order");
+                chrOrder = this.AGPEntries.keySet().stream().collect(Collectors.toList());
+                chrOrder.sort((s, s1) -> {
+                    if(utils.MergerUtils.isNumeric(s) && utils.MergerUtils.isNumeric(s1)){
+                        return Integer.compare(Integer.parseInt(s), Integer.parseInt(s1));
+                    }
+                    return s.compareTo(s1);
+                });
+            }
             
-            orderedChrs.stream().forEach((s) -> {
+            chrOrder.stream().forEach((s) -> {
                 List<Byte> seq = new ArrayList<>();
                 List<AGPEntry> entries = this.AGPEntries.get(s);
                 Collections.sort(entries);
