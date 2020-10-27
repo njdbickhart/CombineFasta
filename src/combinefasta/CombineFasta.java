@@ -99,7 +99,7 @@ public class CombineFasta {
                         "\t-o\tThe full output name of the resultant fasta file" + nl, 
                 "f:a:b:i:o:r|d|", 
                 "fo", 
-                "fabiod", 
+                "fabiord", 
                 "fasta", "agp", "bed", "interval", "output", "reorder","debug");
                         
         
